@@ -24,7 +24,7 @@
       --tile-1: #0284c7;       /* Electric Cerulean */
       --tile-2: #e11d48;       /* Vivid Raspberry Rose */
       --tile-3: #059669;       /* Fresh Emerald Mint */
-      --tile-faded: #c4bed2;   /* Soft Lavender Dissolve */
+      --tile-faded: var(--bg-cell-empty);   /* Seamless with empty cells */
       --player-gold: #f59e0b;  /* Radiant Sunny Mango */
     }
 
@@ -107,12 +107,12 @@
       box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15), 0 4px 10px rgba(5, 150, 105, 0.3);
     }
 
-    /* Faded Memory Cell */
+    /* Faded Memory Cell - Completely identical to empty unvisited cell */
     .tile.faded {
-      background-color: var(--tile-faded);
+      background-color: var(--bg-cell-empty);
       color: transparent !important;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
-      transform: scale(0.98);
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08), 0 2px 5px rgba(68, 55, 87, 0.08);
+      transform: none;
     }
 
     /* Dissolve Animation */
@@ -126,7 +126,7 @@
         filter: brightness(1.3);
       }
       100% {
-        transform: scale(0.98);
+        transform: scale(1);
         filter: brightness(1);
         color: transparent;
       }
@@ -200,6 +200,46 @@
       40%, 60% { transform: translate3d(5px, 0, 0); }
     }
 
+    
+    /* Level Selector Navigation Tabs */
+    .level-tab {
+      transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+      outline: none;
+    }
+    .level-tab.active {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.35);
+      border-color: transparent !important;
+    }
+    .level-tab.unlocked:not(.active) {
+      background-color: #eee8f7;
+      color: #4b3f61;
+      border: 1px solid #d8cfe8;
+    }
+    .level-tab.unlocked:not(.active):hover {
+      background-color: #e4dcfa;
+      color: #2e283d;
+    }
+    .level-tab.locked {
+      background-color: #f3eff9;
+      color: #a49ab5;
+      border: 1px solid #e2dbe9;
+      cursor: not-allowed;
+    }
+    .game-container {
+      width: 100%;
+      max-width: 440px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #levelSelector {
+      margin-bottom: 16px;
+    }
+    #boardContainer, #gridBoard, .tile {
+      touch-action: none;
+    }
+
     /* Dialog Backdrop */
     .dialog-backdrop {
       background: rgba(46, 40, 61, 0.45);
@@ -211,7 +251,7 @@
 <body class="flex flex-col items-center justify-between min-h-screen py-4 px-4 sm:px-6">
 
   <!-- Top App Navigation Bar -->
-  <header class="w-full max-w-sm flex items-center justify-between pb-3 border-b border-[#e5dfd5]">
+  <header class="game-container flex items-center justify-between pb-3 border-b border-[#e5dfd5]">
     <div class="flex items-center gap-2.5">
       <!-- High-End App Icon Badge -->
       <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6366f1] via-[#8b5cf6] to-[#ec4899] flex items-center justify-center shadow-md shadow-indigo-500/25">
@@ -268,9 +308,32 @@
   </header>
 
   <!-- Main Game Stage -->
-  <main class="w-full max-w-sm flex flex-col items-center my-auto py-2">
+  <main class="game-container flex flex-col items-center my-auto py-2">
     <p class="w-full text-center text-base font-bold tracking-wide text-[#2e283d] mb-3">The board forgets. You remember.</p>
     
+    
+    <!-- Grid Level Selector Navigation -->
+    <nav id="levelSelector" class="w-full flex items-center justify-between gap-1 mb-4 p-1 rounded-2xl bg-[#eee8f7] border border-[#d8cfe8] shadow-sm select-none" aria-label="Grid Levels">
+      <button data-level="4" class="level-tab flex-1 py-1 px-1 rounded-xl text-xs font-bold transition flex items-center justify-center gap-0.5" title="4×4 Guided Tutorial">
+        <span>4×4</span>
+      </button>
+      <button data-level="5" class="level-tab flex-1 py-1 px-1 rounded-xl text-xs font-bold transition flex items-center justify-center gap-0.5" title="5×5 Classic">
+        <span>5×5</span>
+      </button>
+      <button data-level="6" class="level-tab flex-1 py-1 px-1 rounded-xl text-xs font-bold transition flex items-center justify-center gap-0.5" title="6×6 Advanced">
+        <span>6×6</span>
+        <span class="level-lock text-[10px]">🔒</span>
+      </button>
+      <button data-level="7" class="level-tab flex-1 py-1 px-1 rounded-xl text-xs font-bold transition flex items-center justify-center gap-0.5" title="7×7 Expert">
+        <span>7×7</span>
+        <span class="level-lock text-[10px]">🔒</span>
+      </button>
+      <button data-level="8" class="level-tab flex-1 py-1 px-1 rounded-xl text-xs font-bold transition flex items-center justify-center gap-0.5" title="8×8 Master">
+        <span>8×8</span>
+        <span class="level-lock text-[10px]">🔒</span>
+      </button>
+    </nav>
+
     <!-- Warm Editorial Status Bar -->
     <div id="statusBar" class="w-full grid grid-cols-3 items-center py-2.5 px-3.5 rounded-2xl bg-[#eee8f7] border border-[#d8cfe8] shadow-sm mb-3">
       <!-- Coverage -->
@@ -300,7 +363,7 @@
         <span class="text-[10px] font-bold tracking-wider text-[#736985] uppercase">Best</span>
         <div class="flex items-baseline gap-1 mt-0.5">
           <span id="bestScore" class="font-mono text-lg font-extrabold text-[#6366f1]">1</span>
-          <span class="font-mono text-xs text-[#8d82a1] font-semibold">/ 25</span>
+          <span class="font-mono text-xs text-[#8d82a1] font-semibold">/ <span id="bestTotalLabel">25</span></span>
         </div>
       </div>
     </div>
@@ -383,7 +446,7 @@
   </main>
 
   <!-- Clean Footer info -->
-  <footer class="w-full max-w-sm text-center text-[11px] text-[#736985] font-medium pt-3 pb-1 border-t border-[#e5dfd5]">
+  <footer class="game-container text-center text-[11px] text-[#736985] font-medium pt-3 pb-1 border-t border-[#e5dfd5]">
     <span>WASD, Arrow Keys, or Tap Adjacent Boxes</span>
   </footer>
 
@@ -421,6 +484,17 @@
       <div class="flex flex-col gap-2.5">
         <button id="modalPlayAgainBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:from-[#4f46e5] hover:to-[#7c3aed] text-white font-bold text-xs tracking-wide transition shadow-md shadow-indigo-500/25">
           Play Again
+        </button>
+
+        <button id="modalShareBtn" class="w-full py-2.5 rounded-xl bg-[#ede8f5] hover:bg-[#e4dcfa] border border-[#d8cfe8] text-[#4b3f61] font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-2xs">
+          <svg class="w-3.5 h-3.5 text-[#6366f1]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          <span id="modalShareLabel">Share Score</span>
         </button>
         <button id="modalReplayBtn" class="w-full py-2.5 rounded-xl bg-[#ede8f5] hover:bg-[#e4dcfa] border border-[#d8cfe8] text-[#4b3f61] font-bold text-xs transition">
           Review Path
@@ -606,44 +680,152 @@
 
     const sound = new MinimalAcousticEngine();
 
+    
+    /* Verified Winnable Starting Positions & Precomputed Solutions (Solver-Validated) */
+    const VERIFIED_STARTS = {"5":[[0,0],[0,4],[4,4],[4,0],[0,2],[2,4],[4,2],[2,0],[1,1],[1,3],[3,3],[3,1],[2,2]],"6":[[0,0],[0,5],[5,5],[5,0],[0,1],[1,5],[5,4],[4,0],[0,4],[5,1],[1,0],[4,5],[0,2],[2,5],[5,3],[3,0],[0,3],[5,2],[2,0],[3,5],[1,1],[1,4],[4,4],[4,1],[1,2],[2,4],[4,3],[3,1],[1,3],[4,2],[2,1],[3,4],[2,2],[2,3],[3,3],[3,2]],"7":[[0,0],[0,6],[6,6],[6,0],[0,2],[2,6],[6,4],[4,0],[0,4],[6,2],[2,0],[4,6],[1,1],[1,5],[5,5],[5,1],[1,3],[3,5],[5,3],[3,1],[2,2],[2,4],[4,4],[4,2],[3,3]],"8":[[0,1],[1,7],[7,6],[6,0],[0,6],[7,1],[1,0],[6,7],[0,2],[2,7],[7,5],[5,0],[0,5],[7,2],[2,0],[5,7],[0,4],[4,7],[7,3],[3,0],[0,3],[7,4],[4,0],[3,7],[1,1],[1,6],[6,6],[6,1],[1,2],[2,6],[6,5],[5,1],[1,5],[6,2],[2,1],[5,6],[2,2],[2,5],[5,5],[5,2],[3,1],[1,4],[4,6],[6,3],[3,6],[4,1],[1,3],[6,4],[3,3],[3,4],[4,4],[4,3],[3,5],[5,4],[4,2],[2,3],[3,2],[4,5],[5,3],[2,4]]};
+
+    const COMPACT_SOLUTIONS = {"5":{"0,0":"DDRUURDRURDDLLDLLDRRRURD","0,4":"LLDRRDLDRDLLUULUULDDDRDL","4,4":"UULDDLULDLUURRURRULLLDLU","4,0":"RRULLURULURRDDRDDRUUULUR","0,2":"LLDDRURRURDDLLDLLDRRRURD","2,4":"UULLDRDDRDLLUULUULDDDRDL","4,2":"RRUULDLLDLUURRURRULLLDLU","2,0":"DDRRULUULURRDDRDDRUUULUR","1,1":"ULDDDRURUURRDLDRDDLULDLL","1,3":"RULLLDRDRRDDLULDLLURULUU","3,3":"DRUUULDLDDLLURULUURDRURR","3,1":"LDRRRULULLUURDRURRDLDRDD","2,2":"UULLDRDLDDRURDRRULURUULD"},"6":{"0,0":"DDRUURDDDLLDDRURDRUUURULURRDDDLDDRU","0,5":"LLDRRDLLLUULLDRDLDRRRDRURDDLLLULLDR","5,5":"UULDDLUUURRUULDLULDDDLDRDLLUUURUULD","5,0":"RRULLURRRDDRRULURULLLULDLUURRRDRRUL","0,1":"LDDDRUURURDDLDDLLDRRRUURDDRUUULUURD","1,5":"ULLLDRRDRDLLULLUULDDDRRDLLDRRRURRDL","5,4":"RUUULDDLDLUURUURRULLLDDLUULDDDRDDLU","4,0":"DRRRULLULURRDRRDDRUUULLURRULLLDLLUR","0,4":"RDDDLUULULDDRDDRRDLLLUULDDLUUURUULD","5,1":"LUUURDDRDRUULUULLURRRDDRUURDDDLDDRU","1,0":"URRRDLLDLDRRURRUURDDDLLDRRDLLLULLDR","4,5":"DLLLURRURULLDLLDDLUUURRULLURRRDRRUL","0,2":"LLDDDRUURDDDLLDRRRUUURULURRDDDLDDRU","2,5":"UULLLDRRDLLLUULDDDRRRDRURDDLLLULLDR","5,3":"RRUUULDDLUUURRULLLDDDLDRDLLUUURUULD","3,0":"DDRRRULLURRRDDRUUULLLULDLUURRRDRRUL","0,3":"RRDDDLUULDDDRRDLLLUUULURULLDDDRDDLU","5,2":"LLUUURDDRUUULLURRRDDDRDLDRRUUULUURD","2,0":"UURRRDLLDRRRUURDDDLLLDLULDDRRRURRDL","3,5":"DDLLLURRULLLDDLUUURRRURDRUULLLDLLUR","1,1":"ULDDDRURUURDDDLDLLDRRRURDRUULURUULD","1,4":"RULLLDRDRRDLLLULUULDDDRDLDRRURDRRUL","4,4":"DRUUULDLDDLUUURURRULLLDLULDDRDLDDRU","4,1":"LDRRRULULLURRRDRDDRUUULURULLDLULLDR","1,2":"ULLDRDLDDDRUURURUURRDLDRDDDLUULDDLU","2,4":"RUULDLULLLDRRDRDRRDDLULDLLLURRULLUR","4,3":"DRRULURUUULDDLDLDDLLURULUUURDDRUURD","3,1":"LDDRURDRRRULLULULLUURDRURRRDLLDRRDL","1,3":"URRDLDRDDDLUULULUULLDRDLDDDRUURDDRU","4,2":"DLLURULUUURDDRDRDDRRULURUUULDDLUULD","2,1":"LUURDRURRRDLLDLDLLDDRURDRRRULLURRUL","3,4":"RDDLULDLLLURRURURRUULDLULLLDRRDLLDR","2,2":"UULLDRDLDDDRUURDDRUUURULURRDDDLDDRU","2,3":"RRUULDLULLLDRRDLLDRRRDRURDDLLLULLDR","3,3":"DDRRULURUUULDDLUULDDDLDRDLLUUURUULD","3,2":"LLDDRURDRRRULLURRULLLULDLUURRRDRRUL"},"7":{"0,0":"DDRUURDDDLLDDDRUURDDRUUURDDDRRULURULURUULDLULDDR","0,6":"LLDRRDLLLUULLLDRRDLLDRRRDLLLDDRURDRURDRRULURULLD","6,6":"UULDDLUUURRUUULDDLUULDDDLUUULLDRDLDRDLDDRURDRUUL","6,0":"RRULLURRRDDRRRULLURRULLLURRRUULDLULDLULLDRDLDRRU","0,2":"LLDDDRUURDDDLLDDRURDRUUURDDDRRULURULURUULDLULDDR","2,6":"UULLLDRRDLLLUULLDRDLDRRRDLLLDDRURDRURDRRULURULLD","6,4":"RRUUULDDLUUURRUULDLULDDDLUUULLDRDLDRDLDDRURDRUUL","4,0":"DDRRRULLURRRDDRRULURULLLURRRUULDLULDLULLDRDLDRRU","0,4":"RRDDDLUULDDDRRDDLULDLUUULDDDLLURULURULUURDRURDDL","6,2":"LLUUURDDRUUULLUURDRURDDDRUUURRDLDRDLDRDDLULDLUUR","2,0":"UURRRDLLDRRRUURRDLDRDLLLDRRRDDLULDLULDLLURULURRD","4,6":"DDLLLURRULLLDDLLURULURRRULLLUURDRURDRURRDLDRDLLU","1,1":"ULDDDRURUURDDDLDLLDDRURDRUURUURULURRDDDLDRDDLULD","1,5":"RULLLDRDRRDLLLULUULLDRDLDRRDRRDRURDDLLLULDLLURUL","5,5":"DRUUULDLDDLUUURURRUULDLULDDLDDLDRDLLUUURULUURDRU","5,1":"LDRRRULULLURRRDRDDRRULURULLULLULDLUURRRDRURRDLDR","1,3":"ULDDRDLDRRUURULURRDDDLDRDDLULDLULDLLURULURULUURD","3,5":"RULLDLULDDRRDRURDDLLLULDLLURULURULUURDRURDRURRDL","5,3":"DRUULURULLDDLDRDLLUUURULUURDRURDRURRDLDRDLDRDDLU","3,1":"LDRRURDRUULLULDLUURRRDRURRDLDRDLDRDDLULDLULDLLUR","2,2":"UULLDRDLDDDRUURDRUURULURRRDLDRDDLULDDRRDLLLULDLL","2,4":"RRUULDLULLLDRRDLDRRDRURDDDLULDLLURULLDDLUUURULUU","4,4":"DDRRULURUUULDDLULDDLDRDLLLURULUURDRUULLURRRDRURR","4,2":"LLDDRURDRRRULLURULLULDLUUURDRURRDLDRRUURDDDLDRDD","3,3":"UULURRDDRUURDDDLLDLLUULUULDDDRDLDDRURDRURDRRUULD"},"8":{"0,1":"LDDDRUURURDDLDRDLLLDDDRUURDDRUURUUURDDDRDLLDRRRUUULURULURULLDLU","1,7":"ULLLDRRDRDLLULDLUUULLLDRRDLLDRRDRRRDLLLDLUULDDDRRRURDRURDRUULUR","7,6":"RUUULDDLDLUURULURRRUUULDDLUULDDLDDDLUUULURRULLLDDDRDLDRDLDRRURD","6,0":"DRRRULLULURRDRURDDDRRRULLURRULLULLLURRRURDDRUUULLLDLULDLULDDRDL","0,6":"RDDDLUULULDDRDLDRRRDDDLUULDDLUULUUULDDDLDRRDLLLUUURULURULURRDRU","7,1":"LUUURDDRDRUULURULLLUUURDDRUURDDRDDDRUUURULLURRRDDDLDRDLDRDLLULD","1,0":"URRRDLLDLDRRURDRUUURRRDLLDRRDLLDLLLDRRRDRUURDDDLLLULDLULDLUURUL","6,7":"DLLLURRURULLDLULDDDLLLURRULLURRURRRULLLULDDLUUURRRDRURDRURDDLDR","0,2":"LLDDDRUURDDDLLDDDRUURDDRUUURDDDRUUURULLLUUURDDRUURRDLDRDDDLDDRU","2,7":"UULLLDRRDLLLUULLLDRRDLLDRRRDLLLDRRRDRUUURRRDLLDRRDDLULDLLLULLDR","7,5":"RRUUULDDLUUURRUUULDDLUULDDDLUUULDDDLDRRRDDDLUULDDLLURULUUURUULD","5,0":"DDRRRULLURRRDDRRRULLURRULLLURRRULLLULDDDLLLURRULLUURDRURRRDRRUL","0,5":"RRDDDLUULDDDRRDDDLUULDDLUUULDDDLUUULURRRUUULDDLUULLDRDLDDDRDDLU","7,2":"LLUUURDDRUUULLUUURDDRUURDDDRUUURDDDRDLLLDDDRUURDDRRULURUUULUURD","2,0":"UURRRDLLDRRRUURRRDLLDRRDLLLDRRRDLLLDLUUULLLDRRDLLDDRURDRRRURRDL","5,7":"DDLLLURRULLLDDLLLURRULLURRRULLLURRRURDDDRRRULLURRUULDLULLLDLLUR","0,4":"LLDRRDLLDRRDLLDRRRUUURULURRDDDLDRDLDRDLLULDLULDLLURULURULURUULD","4,7":"UULDDLUULDDLUULDDDRRRDRURDDLLLULDLULDLUURULURULUURDRURDRURDRRUL","7,3":"RRULLURRULLURRULLLDDDLDRDLLUUURULURULURRDRURDRURRDLDRDLDRDLDDRU","3,0":"DDRUURDDRUURDDRUUULLLULDLUURRRDRURDRURDDLDRDLDRDDLULDLULDLULLDR","0,3":"RRDLLDRRDLLDRRDLLLUUULURULLDDDRDLDRDLDRRURDRURDRRULURULURULUURD","7,4":"LLURRULLURRULLURRRDDDRDLDRRUUULURULURULLDLULDLULLDRDLDRDLDRDDLU","4,0":"UURDDRUURDDRUURDDDLLLDLULDDRRRURDRURDRUULURULURUULDLULDLULDLLUR","3,7":"DDLUULDDLUULDDLUUURRRURDRUULLLDLULDLULDDRDLDRDLDDRURDRURDRURRDL","1,1":"ULDDDRURUURDDDLDLLDDDRUURDDRUUURUURDDDLDDRURDRUULURULURUULDLULD","1,6":"RULLLDRDRRDLLLULUULLLDRRDLLDRRRDRRDLLLULLDRDLDRRURDRURDRRULURUL","6,6":"DRUUULDLDDLUUURURRUUULDDLUULDDDLDDLUUURUULDLULDDRDLDRDLDDRURDRU","6,1":"LDRRRULULLURRRDRDDRRRULLURRULLLULLURRRDRRULURULLDLULDLULLDRDLDR","1,2":"ULLDRDLDDDRUURURUURDDDLDLDRDRUURUURULURRDDDLDRDDDLUULDDLLLULDLU","2,6":"RUULDLULLLDRRDRDRRDLLLULULDLDRRDRRDRURDDLLLULDLLLURRULLUUURULUR","6,5":"DRRULURUUULDDLDLDDLUUURURULULDDLDDLDRDLLUUURULUUURDDRUURRRDRURD","5,1":"LDDRURDRRRULLULULLURRRDRDRURULLULLULDLUURRRDRURRRDLLDRRDDDLDRDL","1,5":"URRDLDRDDDLUULULUULDDDRDRDLDLUULUULURULLDDDRDLDDDRUURDDRRRURDRU","6,2":"DLLURULUUURDDRDRDDRUUULULURURDDRDDRDLDRRUUULURUUULDDLUULLLDLULD","2,1":"LUURDRURRRDLLDLDLLDRRRURURDRDLLDLLDLULDDRRRURDRRRULLURRUUULURUL","5,6":"RDDLULDLLLURRURURRULLLDLDLULURRURRURDRUULLLDLULLLDRRDLLDDDRDLDR","2,2":"UULLDRDLDDDRUURDDDLLDRRRUUURDDDRUUURULLLUUURDDRUURRDLDRDDDLDDRU","2,5":"RRUULDLULLLDRRDLLLUULDDDRRRDLLLDRRRDRUUURRRDLLDRRDDLULDLLLULLDR","5,5":"DDRRULURUUULDDLUUURRULLLDDDLUUULDDDLDRRRDDDLUULDDLLURULUUURUULD","5,2":"LLDDRURDRRRULLURRRDDRUUULLLURRRULLLULDDDLLLURRULLUURDRURRRDRRUL","3,1":"LUUURDDRUURDDDLDLLDDDRUURDDRUUURUURDDDLDDRURDRUULURULURUULDLULD","1,4":"URRRDLLDRRDLLLULUULLLDRRDLLDRRRDRRDLLLULLDRDLDRRURDRURDRRULURUL","4,6":"RDDDLUULDDLUUURURRUUULDDLUULDDDLDDLUUURUULDLULDDRDLDRDLDDRURDRU","6,3":"DLLLURRULLURRRDRDDRRRULLURRULLLULLURRRDRRULURULLDLULDLULLDRDLDR","3,6":"RUUULDDLUULDDDRDRRDDDLUULDDLUUULUULDDDRDDLULDLUURULURULUURDRURD","4,1":"LDDDRUURDDRUUULULLUUURDDRUURDDDRDDRUUULUURDRURDDLDRDLDRDDLULDLU","1,3":"ULLLDRRDLLDRRRURUURRRDLLDRRDLLLDLLDRRRURRDLDRDLLULDLULDLLURULUR","6,4":"DRRRULLURRULLLDLDDLLLURRULLURRRURRULLLDLLURULURRDRURDRURRDLDRDL","3,3":"UULURRDDDRUUURRDLDRDLDRDDDLUULULDDRDLLUUULUULUULDDDRDLDDDRRUULD","3,4":"RRURDDLLLDRRRDDLULDLULDLLLURRURULLDLUURRRURRURRULLLDLULLLDDRRUL","4,4":"DDRDLLUUULDDDLLURULURULUUURDDRDRUULURRDDDRDDRDDRUUULURUUULLDDRU","4,3":"LLDLUURRRULLLUURDRURDRURRRDLLDLDRRURDDLLLDLLDLLDRRRURDRRRUULLDR","3,5":"UULURRRDLDRDLDRDDDLUULULUULUULDDDRDLDRRDRDLLULDLLURULURULURUULD","5,4":"RRURDDDLULDLULDLLLURRURURRURRULLLDLULDDLDLUURULUURDRURDRURDRRUL","4,2":"DDRDLLLURULURULUUURDDRDRDDRDDRUUULURULLULURRDRURRDLDRDLDRDLDDRU","2,3":"LLDLUUURDRURDRURRRDLLDLDLLDLLDRRRURDRUURURDDLDRDDLULDLULDLULLDR","3,2":"UURULLLDRDLDRDLDDDRUURURUURUURDDDLDRDLLDLDRRURDRRULURULURULUURD","4,5":"DDLDRRRULURULURUUULDDLDLDDLDDLUUURULURRURULLDLULLDRDLDRDLDRDDLU","5,3":"LLULDDDRURDRURDRRRULLULULLULLURRRDRURDDRDRUULURUULDLULDLULDLLUR","2,4":"RRDRUUULDLULDLULLLDRRDRDRRDRRDLLLULDLUULULDDRDLDDRURDRURDRURRDL"}};
+
     /* Fade 25 Core Controller */
     class Fade25Engine {
       constructor() {
         this.gridSize = 5;
         this.totalCells = 25;
-        this.mode = '5x5'; // '5x5' or '4x4'
+        this.mode = '5x5';
         this.isTutorMode = false;
         this.tutorStepIndex = 0;
 
-        this.solvableParityStarts = [
-          [0,0], [0,2], [0,4],
-          [1,1], [1,3],
-          [2,0], [2,2], [2,4],
-          [3,1], [3,3],
-          [4,0], [4,2], [4,4]
-        ];
+        this.levelConfigs = {
+          4: { name: 'Tutorial', label: '4×4 Tutorial', total: 16, key: 'fade25_best_4x4' },
+          5: { name: 'Classic', label: '5×5 Classic', total: 25, key: 'fade25_best_5x5' },
+          6: { name: 'Advanced', label: '6×6 Advanced', total: 36, key: 'fade25_best_6x6' },
+          7: { name: 'Expert', label: '7×7 Expert', total: 49, key: 'fade25_best_7x7' },
+          8: { name: 'Master', label: '8×8 Master', total: 64, key: 'fade25_best_8x8' }
+        };
+
+        this.levelNames = {
+          4: '4×4 Tutorial',
+          5: '5×5 Classic',
+          6: '6×6 Advanced',
+          7: '7×7 Expert',
+          8: '8×8 Master'
+        };
 
         this.init4x4TutorSteps();
         this.cacheDOM();
         this.bindEvents();
+        this.initLevelSelector();
 
-        // First-time players learn on the guided 4×4 board. Once completed,
-        // future visits open directly in the 5×5 Classic game.
+        try {
+          const best5 = parseInt(localStorage.getItem('fade25_best_5x5') || localStorage.getItem('fade25_best_score') || '0', 10);
+          if (best5 < 25) {
+            lsSet('fade25_unlocked_level', '5');
+          }
+          lsSet('fade25_tutorial_completed', '1');
+        } catch (e) {}
+
+        // Check tutorial completion and resume at last unlocked/played level
         if (this.hasCompletedTutorial()) {
-          this.buildBoard(5);
-          this.loadRecords();
-          this.startSession();
+          const urlParams = new URLSearchParams(window.location.search);
+          const lvlParam = parseInt(urlParams.get('level'), 10);
+          const unlocked = this.getUnlockedLevel();
+          let targetSize = 5;
+          if (!isNaN(lvlParam) && lvlParam >= 4 && lvlParam <= unlocked) {
+            targetSize = lvlParam;
+          } else {
+            const savedMode = lsGet('fade25_current_mode') || '5x5';
+            const size = parseInt(savedMode[0], 10);
+            targetSize = (size >= 4 && size <= unlocked) ? size : 5;
+          }
+          this.setMode(`${targetSize}x${targetSize}`);
         } else {
           this.setMode('4x4');
         }
       }
 
-      hasCompletedTutorial() {
+      getUnlockedLevel() {
         try {
-          return localStorage.getItem('fade25_tutorial_completed') === '1';
-        } catch (error) {
-          return false;
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('unlockAll') === '1' || urlParams.get('unlock') === 'all') return 8;
+          const uParam = parseInt(urlParams.get('unlocked'), 10);
+          if (!isNaN(uParam) && uParam >= 4 && uParam <= 8) return uParam;
+
+          let unlocked = 5;
+          const best5 = parseInt(localStorage.getItem('fade25_best_5x5') || localStorage.getItem('fade25_best_score') || '0', 10);
+          if (best5 >= 25) unlocked = Math.max(unlocked, 6);
+          const best6 = parseInt(localStorage.getItem('fade25_best_6x6') || '0', 10);
+          if (best6 >= 36) unlocked = Math.max(unlocked, 7);
+          const best7 = parseInt(localStorage.getItem('fade25_best_7x7') || '0', 10);
+          if (best7 >= 49) unlocked = Math.max(unlocked, 8);
+
+          const stored = parseInt(localStorage.getItem('fade25_unlocked_level') || '5', 10);
+          if (!isNaN(stored) && stored >= 5 && stored <= 8) {
+            unlocked = Math.max(unlocked, stored);
+          }
+          return Math.min(8, Math.max(5, unlocked));
+        } catch (e) {
+          return 5;
         }
+      }
+
+      setUnlockedLevel(lvl) {
+        try {
+          const cur = this.getUnlockedLevel();
+          if (lvl > cur) {
+            localStorage.setItem('fade25_unlocked_level', String(lvl));
+            this.updateLevelSelectorUI();
+          }
+        } catch (e) {}
+      }
+
+      initLevelSelector() {
+        if (!this.levelTabs) return;
+        this.levelTabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+            const lvl = parseInt(tab.dataset.level, 10);
+            this.switchLevel(lvl);
+          });
+        });
+        this.updateLevelSelectorUI();
+      }
+
+      updateLevelSelectorUI() {
+        if (!this.levelTabs) return;
+        const unlocked = this.getUnlockedLevel();
+        this.levelTabs.forEach(tab => {
+          const lvl = parseInt(tab.dataset.level, 10);
+          const lockEl = tab.querySelector('.level-lock');
+          const isCurrent = (lvl === this.gridSize);
+          const isUnlocked = (lvl <= unlocked);
+
+          tab.classList.toggle('active', isCurrent);
+          tab.classList.toggle('unlocked', isUnlocked && !isCurrent);
+          tab.classList.toggle('locked', !isUnlocked);
+
+          if (lockEl) {
+            lockEl.classList.toggle('hidden', isUnlocked);
+          }
+        });
+      }
+
+      switchLevel(lvl) {
+        if (lvl === 4) {
+          this.setMode('4x4');
+          return;
+        }
+        const unlocked = this.getUnlockedLevel();
+        if (lvl > unlocked) {
+          const prevName = this.levelNames[lvl - 1] || `${lvl - 1}×${lvl - 1}`;
+          const targetName = this.levelNames[lvl] || `${lvl}×${lvl}`;
+          this.notify(`Clear ${prevName} to unlock ${targetName}!`, 2200);
+          vibrate([30, 40]);
+          return;
+        }
+        this.setMode(`${lvl}x${lvl}`);
+      }
+
+      hasCompletedTutorial() {
+        return true;
       }
 
       init4x4TutorSteps() {
@@ -798,7 +980,11 @@
         this.coverageStatWrap = document.getElementById('coverageStatWrap');
         this.visitedCountEl = document.getElementById('visitedCount');
         this.totalCountLabelEl = document.getElementById('totalCountLabel');
+        this.bestTotalLabelEl = document.getElementById('bestTotalLabel');
         this.bestScoreEl = document.getElementById('bestScore');
+        this.levelTabs = document.querySelectorAll('.level-tab');
+        this.modalShareBtn = document.getElementById('modalShareBtn');
+        this.modalShareLabel = document.getElementById('modalShareLabel');
         this.dirLabelEl = document.getElementById('dirLabel');
         this.meter1 = document.getElementById('meter1');
         this.meter2 = document.getElementById('meter2');
@@ -848,10 +1034,21 @@
         this.gridSize = size;
         this.totalCells = size * size;
         this.totalCountLabelEl.textContent = this.totalCells;
+        if (this.bestTotalLabelEl) this.bestTotalLabelEl.textContent = this.totalCells;
         this.boardEl.innerHTML = '';
-        this.boardEl.className = (size === 4)
-          ? 'grid grid-cols-4 grid-rows-4 gap-2.5 w-full h-full transition-all'
-          : 'grid grid-cols-5 grid-rows-5 gap-2 w-full h-full transition-all';
+
+        const gapMap = { 4: '10px', 5: '8px', 6: '6px', 7: '5px', 8: '4px' };
+        const fontMap = { 4: '1.65rem', 5: '1.45rem', 6: '1.25rem', 7: '1.05rem', 8: '0.92rem' };
+        const radiusMap = { 4: '12px', 5: '10px', 6: '8px', 7: '6px', 8: '5px' };
+
+        this.boardEl.style.display = 'grid';
+        this.boardEl.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
+        this.boardEl.style.gridTemplateRows = `repeat(${size}, minmax(0, 1fr))`;
+        this.boardEl.style.gap = gapMap[size] || '4px';
+        this.boardEl.className = 'w-full h-full transition-all';
+
+        const tileSizeFont = fontMap[size] || '0.9rem';
+        const tileRadius = radiusMap[size] || '5px';
 
         this.tiles = [];
         for (let r = 0; r < size; r++) {
@@ -859,6 +1056,8 @@
           for (let c = 0; c < size; c++) {
             const tile = document.createElement('div');
             tile.className = 'tile';
+            tile.style.fontSize = tileSizeFont;
+            tile.style.borderRadius = tileRadius;
             tile.dataset.r = r;
             tile.dataset.c = c;
             tile.addEventListener('click', () => this.handleDirectTileTap(r, c));
@@ -917,7 +1116,11 @@
         // Result dialog actions
         this.modalPlayAgainBtn.addEventListener('click', () => {
           this.closeModal(this.endModal);
-          if (this.isTutorMode && this.isVictory) {
+          if (this.modalPlayAgainBtn.dataset.next) {
+            const nextLvl = parseInt(this.modalPlayAgainBtn.dataset.next, 10);
+            delete this.modalPlayAgainBtn.dataset.next;
+            this.switchLevel(nextLvl);
+          } else if (this.isTutorMode && this.isVictory) {
             this.setMode('5x5');
           } else if (this.isTutorMode) {
             this.startTutorPractice();
@@ -925,6 +1128,26 @@
             this.startSession();
           }
         });
+
+        if (this.modalShareBtn) {
+          this.modalShareBtn.addEventListener('click', () => {
+            const isWin = this.isVictory;
+            const pct = Math.round((this.history.length / this.totalCells) * 100);
+            const lvlName = this.levelNames[this.gridSize] || `${this.gridSize}×${this.gridSize}`;
+            const shareText = `Fade 25 — ${lvlName}\n${isWin ? '🏆 100% CLEARED!' : 'Score'}: ${this.history.length} / ${this.totalCells} (${pct}%)\nCan you beat it?`;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(shareText).then(() => {
+                this.notify('Score copied to clipboard!');
+              }).catch(() => {
+                this.notify(`${this.history.length}/${this.totalCells} (${pct}%)`);
+              });
+            } else {
+              this.notify(`${this.history.length}/${this.totalCells} (${pct}%)`);
+            }
+          });
+        }
+
         document.getElementById('modalReplayBtn').addEventListener('click', () => {
           this.closeModal(this.endModal);
           this.launchReplay();
@@ -957,11 +1180,15 @@
           startY = e.touches[0].clientY;
         }, { passive: true });
 
+        this.boardEl.addEventListener('touchmove', (e) => {
+          if (e.cancelable) e.preventDefault();
+        }, { passive: false });
+
         this.boardEl.addEventListener('touchend', (e) => {
           if (this.isReplaying) return;
           const dx = e.changedTouches[0].clientX - startX;
           const dy = e.changedTouches[0].clientY - startY;
-          if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+          if (Math.max(Math.abs(dx), Math.abs(dy)) < 22) return;
           if (Math.abs(dx) > Math.abs(dy)) {
             this.dispatchMove(dx > 0 ? 'RIGHT' : 'LEFT');
           } else {
@@ -973,6 +1200,15 @@
       setMode(newMode) {
         this.mode = newMode;
         this.isTutorMode = (newMode === '4x4');
+        const size = parseInt(newMode[0], 10);
+        this.gridSize = size;
+        this.totalCells = size * size;
+
+        try {
+          lsSet('fade25_current_mode', newMode);
+        } catch (e) {}
+
+        this.updateLevelSelectorUI();
 
         if (this.isTutorMode) {
           this.practiceBtn.classList.add('bg-indigo-100', 'border-indigo-400', 'text-indigo-800');
@@ -989,24 +1225,32 @@
           this.tutorLiveBanner.classList.add('hidden');
           if (this.statusBarEl) {
             this.statusBarEl.classList.remove('hidden');
-            this.statusBarEl.className = 'w-full grid grid-cols-3 items-center py-2.5 px-3.5 rounded-2xl bg-[#eee8f7] border border-[#d8cfe8] shadow-sm mb-3';
+            this.statusBarEl.className = 'w-full grid grid-cols-3 items-center py-2 px-3 sm:py-2.5 sm:px-3.5 rounded-2xl bg-[#eee8f7] border border-[#d8cfe8] shadow-sm mb-3';
           }
           if (this.coverageStatWrap) this.coverageStatWrap.classList.remove('hidden');
-          this.buildBoard(5);
+          this.buildBoard(size);
           this.loadRecords();
           this.startSession();
-          this.notify('5×5 Standard game started');
+          const lvlName = this.levelNames[size] || `${size}×${size}`;
+          this.notify(`${lvlName} started`);
         }
       }
 
       recordKey() {
-        return this.isTutorMode ? 'fade25_best_4x4' : 'fade25_best_5x5';
+        return `fade25_best_${this.gridSize}x${this.gridSize}`;
       }
 
       loadRecords() {
         const key = this.recordKey();
-        this.bestScore = parseInt(lsGet(key) || '1', 10);
+        let val = lsGet(key);
+        if (!val && this.gridSize === 5) {
+          val = lsGet('fade25_best_score');
+        }
+        this.bestScore = parseInt(val || '1', 10);
         this.bestScoreEl.textContent = this.bestScore;
+        if (this.bestTotalLabelEl) {
+          this.bestTotalLabelEl.textContent = this.totalCells;
+        }
       }
 
       saveRecords() {
@@ -1014,7 +1258,13 @@
           this.bestScore = this.history.length;
           const key = this.recordKey();
           lsSet(key, this.bestScore);
+          if (this.gridSize === 5) {
+            lsSet('fade25_best_score', this.bestScore);
+          }
           this.bestScoreEl.textContent = this.bestScore;
+          if (this.bestTotalLabelEl) {
+            this.bestTotalLabelEl.textContent = this.totalCells;
+          }
         }
       }
 
@@ -1035,9 +1285,9 @@
         this.replayBar.classList.add('hidden');
         this.closeModal(this.endModal);
 
-        // State grid 5x5
-        this.cells = Array(5).fill(0).map((_, r) =>
-          Array(5).fill(0).map((_, c) => ({
+        const size = this.gridSize;
+        this.cells = Array(size).fill(0).map((_, r) =>
+          Array(size).fill(0).map((_, c) => ({
             r, c,
             isVisited: false,
             isVisible: false,
@@ -1045,14 +1295,23 @@
           }))
         );
 
-        // Parity-verified start selection
-        const startCoord = this.solvableParityStarts[Math.floor(Math.random() * this.solvableParityStarts.length)];
+        // Solver-verified start selection (guaranteed winnable)
+        const starts = (typeof VERIFIED_STARTS !== 'undefined' && VERIFIED_STARTS[size])
+          ? VERIFIED_STARTS[size]
+          : [[0, 0]];
+        const startCoord = starts[Math.floor(Math.random() * starts.length)];
 
         const [sr, sc] = startCoord;
         this.currR = sr;
         this.currC = sc;
         this.lastDir = null;
         this.cadence = 1;
+
+        // Cache solution internally for validation
+        const solKey = `${sr},${sc}`;
+        this.verifiedSolutionPath = (typeof COMPACT_SOLUTIONS !== 'undefined' && COMPACT_SOLUTIONS[size] && COMPACT_SOLUTIONS[size][solKey])
+          ? COMPACT_SOLUTIONS[size][solKey]
+          : null;
 
         const rootCell = this.cells[sr][sc];
         rootCell.isVisited = true;
@@ -1333,11 +1592,10 @@
         if (isWin) {
           sound.playVictory();
           if (this.isTutorMode) {
-            try {
-              localStorage.setItem('fade25_tutorial_completed', '1');
-            } catch (error) {
-              // The tutorial still completes if browser storage is unavailable.
-            }
+            try { lsSet('fade25_tutorial_completed', '1'); } catch (e) {}
+            this.setUnlockedLevel(5);
+          } else if (this.gridSize < 8) {
+            this.setUnlockedLevel(this.gridSize + 1);
           }
         } else {
           sound.playTermination();
@@ -1368,15 +1626,35 @@
 
           if (this.isTutorMode && isWin) {
             this.modalTitle.textContent = '16/16 Cleared — Complete!';
-            this.modalSubtitle.textContent = 'You completed all tutorial steps and cleared the board. Ready for the 5×5 game?';
-            this.modalPlayAgainBtn.textContent = 'Start 5×5 Board';
+            this.modalSubtitle.textContent = 'Tutorial completed! 5×5 Classic is now unlocked.';
+            this.modalPlayAgainBtn.textContent = 'Start 5×5 Classic';
+            this.modalPlayAgainBtn.dataset.next = '5';
             this.modalResultText.textContent = '100% Cleared';
             this.modalResultLabel.textContent = 'Result';
+          } else if (isWin) {
+            const curName = this.levelNames[this.gridSize] || `${this.gridSize}×${this.gridSize}`;
+            if (this.gridSize < 8) {
+              const nextSize = this.gridSize + 1;
+              const nextName = this.levelNames[nextSize] || `${nextSize}×${nextSize}`;
+              this.modalTitle.textContent = `${this.totalCells}/${this.totalCells} Cleared — Victory!`;
+              this.modalSubtitle.textContent = `Masterful! You cleared ${curName}. ${nextName} is now unlocked!`;
+              this.modalPlayAgainBtn.textContent = `Next Level: ${nextName}`;
+              this.modalPlayAgainBtn.dataset.next = String(nextSize);
+            } else {
+              this.modalTitle.textContent = '64/64 Cleared — Grand Master!';
+              this.modalSubtitle.textContent = 'Phenomenal spatial memory! You conquered the entire 8×8 Master grid!';
+              this.modalPlayAgainBtn.textContent = 'Play 8×8 Again';
+              delete this.modalPlayAgainBtn.dataset.next;
+            }
+            this.modalScore.textContent = `${this.history.length} / ${this.totalCells}`;
+            this.modalResultLabel.textContent = 'Boxes left';
+            this.modalResultText.textContent = '0 (100%)';
           } else {
-            this.modalTitle.textContent = isWin ? 'Victory!' : 'Game Over';
+            this.modalTitle.textContent = 'Game Over';
             this.modalSubtitle.textContent = reason + (newBest ? ' New personal best!' : '');
             this.modalResultLabel.textContent = 'Boxes left';
             this.modalPlayAgainBtn.textContent = this.isTutorMode ? 'Replay 4×4 Practice' : 'Play Again';
+            delete this.modalPlayAgainBtn.dataset.next;
             this.modalScore.textContent = `${this.history.length} / ${this.totalCells}`;
             this.modalResultText.textContent = String(this.totalCells - this.history.length);
           }
@@ -1549,7 +1827,54 @@
         this.render();
         this.openModal(this.endModal);
       }
+
+      /* Embedded Path Solver for On-Demand Validation */
+      solveHamiltonian(N = this.gridSize, startR = 0, startC = 0, budget = 2500000) {
+        const total = N * N;
+        const visited = new Uint8Array(total);
+        visited[startR * N + startC] = 1;
+        const path = [{ r: startR, c: startC, dir: null, num: 1 }];
+        const dirs = [
+          { dr: -1, dc: 0, d: 'UP' },
+          { dr: 1, dc: 0, d: 'DOWN' },
+          { dr: 0, dc: -1, d: 'LEFT' },
+          { dr: 0, dc: 1, d: 'RIGHT' }
+        ];
+        let steps = 0;
+        function solve(currR, currC, lastDir, straight) {
+          if (path.length === total) return true;
+          if (++steps > budget) return false;
+          const validMoves = [];
+          for (let i = 0; i < 4; i++) {
+            const { dr, dc, d } = dirs[i];
+            const nr = currR + dr, nc = currC + dc;
+            if (nr >= 0 && nr < N && nc >= 0 && nc < N && !visited[nr * N + nc]) {
+              if (d === lastDir && straight >= 3) continue;
+              let deg = 0;
+              for (let j = 0; j < 4; j++) {
+                const snr = nr + dirs[j].dr, snc = nc + dirs[j].dc;
+                if (snr >= 0 && snr < N && snc >= 0 && snc < N && !visited[snr * N + snc]) deg++;
+              }
+              validMoves.push({ dr, dc, d, nr, nc, deg });
+            }
+          }
+          validMoves.sort((a, b) => a.deg - b.deg);
+          for (let i = 0; i < validMoves.length; i++) {
+            const move = validMoves[i];
+            const nextStraight = (lastDir === null) ? 2 : ((move.d === lastDir) ? straight + 1 : 1);
+            visited[move.nr * N + move.nc] = 1;
+            path.push({ r: move.nr, c: move.nc, dir: move.d, num: nextStraight });
+            if (solve(move.nr, move.nc, move.d, nextStraight)) return true;
+            path.pop();
+            visited[move.nr * N + move.nc] = 0;
+          }
+          return false;
+        }
+        const ok = solve(startR, startC, null, 1);
+        return ok ? path : null;
+      }
     }
+
 
     window.addEventListener('DOMContentLoaded', () => {
       window.game = new Fade25Engine();

@@ -1,0 +1,13 @@
+node_modules/
+*.zip
+*.log
+.DS_Store
+Thumbs.db
+apply_*.js
+make_embedded_data.js
+precompute_all.js
+test_grid_solver.js
+test_symmetry.js
+test_validate_all.js
+verified_starts_*.json
+all_verified_starts.json
