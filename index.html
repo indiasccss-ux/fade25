@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fade 25 — Spatial Memory Puzzle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      /* Unique Modern Editorial Pop Palette (Fresh, Colorful, Non-2048) */
+      --bg-page: #fbf8f3;
+      --bg-board: #cfcadb;
+      --border-board: #bfb8cc;
+      --bg-cell-empty: #ded9ea;
+      --bg-cell-hover: #eae5f5;
+      --text-dark: #2e283d;
+      --text-muted: #736985;
+      --text-light: #ffffff;
+      
+      /* Vibrant Gemstone Tile Spectrum */
+      --tile-1: #0284c7;       /* Electric Cerulean */
+      --tile-2: #e11d48;       /* Vivid Raspberry Rose */
+      --tile-3: #059669;       /* Fresh Emerald Mint */
+      --tile-faded: #c4bed2;   /* Soft Lavender Dissolve */
+      --player-gold: #f59e0b;  /* Radiant Sunny Mango */
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 12%, #fffaf3 0%, #f7f1e7 65%, #eee7dc 100%);
+      color: var(--text-dark);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Distinctive Slate-Lavender Board Container */
+    .board-container {
+      background-color: var(--bg-board);
+      border-radius: 20px;
+      box-shadow: 0 12px 32px rgba(99, 87, 122, 0.18), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+      border: 4px solid var(--border-board);
+    }
+
+    .tile {
+      aspect-ratio: 1;
+      background-color: var(--bg-cell-empty);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.65rem;
+      font-weight: 800;
+      position: relative;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: background-color 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.14s ease, box-shadow 0.2s ease;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08), 0 2px 5px rgba(68, 55, 87, 0.08);
+    }
+
+    .tile:hover:not(.visited):not(.current) {
+      background-color: var(--bg-cell-hover);
+    }
+
+    .tile:active:not(.visited):not(.current) {
+      transform: scale(0.96);
+    }
+
+    /* Active Player Position (Glowing Sunny Gold) */
+    .tile.current {
+      background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+      color: #2e283d !important;
+      font-weight: 800;
+      box-shadow: 0 5px 20px rgba(245, 158, 11, 0.48), inset 0 2px 0 rgba(255, 255, 255, 0.7) !important;
+      transform: scale(1.05);
+      z-index: 10;
+    }
+
+    /* Visited & Visible (Vibrant Modern Spectrum) */
+    .tile.visited-visible.val-1 {
+      background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+      color: #ffffff;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15), 0 4px 10px rgba(2, 132, 199, 0.3);
+    }
+    .tile.visited-visible.val-2 {
+      background: linear-gradient(135deg, #e11d48 0%, #fb7185 100%);
+      color: #ffffff;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15), 0 4px 10px rgba(225, 29, 72, 0.3);
+    }
+    .tile.visited-visible.val-3 {
+      background: linear-gradient(135deg, #059669 0%, #34d399 100%);
+      color: #ffffff;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15), 0 4px 10px rgba(5, 150, 105, 0.3);
+    }
+
+    /* Faded Memory Cell */
+    .tile.faded {
+      background-color: var(--tile-faded);
+      color: transparent !important;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
+      transform: scale(0.98);
+    }
+
+    /* Dissolve Animation */
+    .fade-dissolve {
+      animation: dissolveTile 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes dissolveTile {
+      0% {
+        transform: scale(1.08);
+        filter: brightness(1.3);
+      }
+      100% {
+        transform: scale(0.98);
+        filter: brightness(1);
+        color: transparent;
+      }
+    }
+
+    /* Replay Step Styles */
+    .tile.replay-tile {
+      background-color: #9f96b2 !important;
+      color: #ffffff !important;
+      font-size: 1.05rem !important;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+    }
+    .tile.replay-tile.start-node {
+      background-color: #059669 !important;
+      color: #ffffff !important;
+    }
+    .tile.replay-tile.end-node {
+      background-color: #e11d48 !important;
+      color: #ffffff !important;
+    }
+
+    .tile.fade-flash { outline: 3px solid #e11d48; outline-offset: 2px; animation: flashRing 0.7s ease-in-out 3; }
+    .tile.fade-dissolve.fade-flash { animation: dissolveTile 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards, flashRing 0.7s ease-in-out 3; }
+    @keyframes flashRing { 50% { outline-color: #f59e0b; } }
+
+    /* Segmented Cadence Meter */
+    .dash-meter {
+      height: 5px;
+      flex: 1;
+      border-radius: 9999px;
+      background-color: #ded8ea;
+      transition: background-color 0.2s ease;
+    }
+    .dash-meter.fill {
+      background-color: #0284c7;
+    }
+    .dash-meter.lock {
+      background-color: #e11d48;
+    }
+
+    /* Live Tutor Board Hints & Shake */
+    .tile.target-hint {
+      border: 3px dashed #059669 !important;
+      background-color: rgba(5, 150, 105, 0.16) !important;
+      animation: pulse-target 1.3s infinite ease-in-out;
+      cursor: pointer;
+    }
+    .tile.forbidden-hint {
+      border: 3px dashed #e11d48 !important;
+      background-color: rgba(225, 29, 72, 0.18) !important;
+      color: #e11d48 !important;
+    }
+    @keyframes pulse-target {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.4);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 8px rgba(5, 150, 105, 0);
+      }
+    }
+    .animate-shake {
+      animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-3px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+      40%, 60% { transform: translate3d(5px, 0, 0); }
+    }
+
+    /* Dialog Backdrop */
+    .dialog-backdrop {
+      background: rgba(46, 40, 61, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen py-4 px-4 sm:px-6">
+
+  <!-- Top App Navigation Bar -->
+  <header class="w-full max-w-sm flex items-center justify-between pb-3 border-b border-[#e5dfd5]">
+    <div class="flex items-center gap-2.5">
+      <!-- High-End App Icon Badge -->
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6366f1] via-[#8b5cf6] to-[#ec4899] flex items-center justify-center shadow-md shadow-indigo-500/25">
+        <span class="text-sm font-extrabold text-white font-mono tracking-tighter">25</span>
+      </div>
+      <div>
+        <h1 class="text-base font-extrabold tracking-tight text-[#2e283d]">
+          Fade 25
+        </h1>
+      </div>
+    </div>
+
+    <!-- Clean Vector Icon Actions -->
+    <div class="flex items-center gap-1.5">
+      <!-- 4x4 Guided Tutor Practice Button -->
+      <button id="practiceBtn" class="px-2.5 py-1.5 rounded-xl bg-[#eee8f7] hover:bg-[#e4dcfa] border border-[#d8cfe8] text-[#4b3f61] hover:text-[#2e283d] text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Return to the 4×4 guided tutorial or skip to 5×5 Classic">
+        <svg class="w-3.5 h-3.5 text-[#6366f1]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path d="M12 2l8 4.5v6c0 4.8-3.4 9.3-8 10.5-4.6-1.2-8-5.7-8-10.5v-6L12 2z"></path>
+          <polyline points="9 12 11 14 15 10"></polyline>
+        </svg>
+        <span id="practiceBtnLabel">4×4 Tutorial</span>
+      </button>
+
+      <!-- Rules / Help -->
+      <button id="helpBtn" class="w-9 h-9 rounded-xl bg-[#eee8f7] hover:bg-[#e4dcfa] border border-[#d8cfe8] flex items-center justify-center text-[#4b3f61] hover:text-[#2e283d] transition shadow-sm" title="Game Rules" aria-label="Game Rules">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </button>
+
+      <!-- Audio Mute/Unmute -->
+      <button id="soundBtn" class="w-9 h-9 rounded-xl bg-[#eee8f7] hover:bg-[#e4dcfa] border border-[#d8cfe8] flex items-center justify-center text-[#4b3f61] hover:text-[#2e283d] transition shadow-sm" title="Toggle Sound" aria-label="Toggle Sound">
+        <svg id="soundIconOn" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+        <svg id="soundIconOff" class="w-4 h-4 hidden" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <line x1="23" y1="9" x2="17" y2="15"></line>
+          <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+      </button>
+
+      <!-- Restart -->
+      <button id="restartBtn" class="w-9 h-9 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:from-[#4f46e5] hover:to-[#7c3aed] text-white flex items-center justify-center transition shadow-sm shadow-indigo-500/30 ml-0.5" title="Restart (R)" aria-label="Restart">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Game Stage -->
+  <main class="w-full max-w-sm flex flex-col items-center my-auto py-2">
+    <p class="w-full text-center text-base font-bold tracking-wide text-[#2e283d] mb-3">The board forgets. You remember.</p>
+    
+    <!-- Warm Editorial Status Bar -->
+    <div id="statusBar" class="w-full grid grid-cols-3 items-center py-2.5 px-3.5 rounded-2xl bg-[#eee8f7] border border-[#d8cfe8] shadow-sm mb-3">
+      <!-- Coverage -->
+      <div id="coverageStatWrap" class="flex flex-col">
+        <span class="text-[10px] font-bold tracking-wider text-[#736985] uppercase">Coverage</span>
+        <div class="flex items-baseline gap-1 mt-0.5">
+          <span id="visitedCount" class="font-mono text-lg font-extrabold text-[#2e283d]">1</span>
+          <span class="font-mono text-xs text-[#8d82a1] font-semibold">/ <span id="totalCountLabel">25</span></span>
+        </div>
+      </div>
+
+      <!-- Vector Cadence -->
+      <div class="flex flex-col items-center">
+        <div class="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-[#736985] uppercase">
+          <span>Run</span>
+          <span id="dirLabel" class="font-mono text-[#2e283d] font-extrabold">—</span>
+        </div>
+        <div class="w-16 flex items-center gap-1 mt-1.5">
+          <div id="meter1" class="dash-meter"></div>
+          <div id="meter2" class="dash-meter"></div>
+          <div id="meter3" class="dash-meter"></div>
+        </div>
+      </div>
+
+      <!-- Best Performance Record -->
+      <div class="flex flex-col items-end">
+        <span class="text-[10px] font-bold tracking-wider text-[#736985] uppercase">Best</span>
+        <div class="flex items-baseline gap-1 mt-0.5">
+          <span id="bestScore" class="font-mono text-lg font-extrabold text-[#6366f1]">1</span>
+          <span class="font-mono text-xs text-[#8d82a1] font-semibold">/ 25</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Tutor Banner (Shown during 4x4 Guided Tutor Practice) -->
+    <div id="tutorLiveBanner" class="w-full bg-[#eee8f7] border border-[#d8cfe8] rounded-2xl p-3 mb-3 shadow-sm hidden">
+      <div class="flex items-center justify-between pb-2 border-b border-[#dcd4e8] mb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-[#6366f1]"></span>
+          <span class="text-xs font-extrabold text-[#2e283d]">4×4 Guided Tutorial</span>
+          <span id="tutorLiveStep" class="font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#6366f1] border border-[#d8cfe8] shadow-2xs">
+            Step 1 of 15
+          </span>
+        </div>
+        <button id="tutorBlueprintBtn" class="text-[10px] font-bold px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#4338ca] border border-indigo-200 transition flex items-center gap-1.5 shadow-2xs" title="Optionally preview the tutorial route">
+          <svg class="w-3.5 h-3.5 text-[#4338ca]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <circle cx="6" cy="18" r="2.5"></circle>
+            <circle cx="18" cy="6" r="2.5"></circle>
+            <path d="M8.5 15.5l7-7"></path>
+          </svg>
+          <span id="tutorBlueprintLabel">Preview Route</span>
+        </button>
+      </div>
+      <div id="tutorLiveInstruction" class="text-sm font-extrabold text-[#0284c7] mb-1.5 flex items-center gap-1">
+        Step <b>RIGHT</b> <span class="font-normal text-xs text-[#52637a]">(or tap target tile)</span>
+      </div>
+      <div id="tutorLiveReason" class="text-xs text-[#3b2d54] font-medium leading-relaxed bg-white/85 p-2 rounded-xl border border-[#ded5ec] shadow-2xs mb-1.5">
+        <span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#4f46e5] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 mr-1.5">Rule 1</span> Straight steps count up: 1 → <b>2</b>.
+      </div>
+      <div id="tutorLiveStrategy" class="text-xs text-[#5c3e0a] font-medium leading-relaxed bg-[#fef9ee] p-2 rounded-xl border border-[#f5dfb8] shadow-2xs">
+        <span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Walk along the edge first. Do not enter the center yet.
+      </div>
+    </div>
+
+    <!-- Matrix Board -->
+    <div id="boardContainer" class="relative w-full aspect-square p-2.5 board-container transition-all duration-300">
+      <div id="gridBoard" class="grid grid-cols-5 grid-rows-5 gap-2 w-full h-full transition-all">
+        <!-- Cells rendered dynamically -->
+      </div>
+
+      <!-- Understated Toast Feedback -->
+      <div id="toast" class="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 transform -translate-y-1.5 px-3.5 py-1 rounded-full text-xs font-bold text-[#ffffff] bg-[#2e283d]/90 shadow-lg backdrop-blur-md transition-all duration-200 z-20 whitespace-nowrap">
+      </div>
+    </div>
+
+    <!-- Active Tile Rule Micro-guide -->
+    <div class="w-full flex items-center justify-between text-[11px] text-[#65587f] font-semibold px-2 mt-2.5">
+      <div class="flex items-center gap-1.5" title="Continuing in the same direction counts up 1 → 2 → 3">
+        <span class="w-2 h-2 rounded-full bg-[#0284c7]"></span>
+        <span>Same Dir: <span class="font-mono text-[#2e283d] font-bold">1 · 2 · 3</span></span>
+      </div>
+      <div class="flex items-center gap-1.5" title="Changing direction (turning) resets count to 1">
+        <span class="w-2 h-2 rounded-full bg-[#e11d48]"></span>
+        <span>Turn: <span class="font-mono text-[#2e283d] font-bold">Resets to 1</span></span>
+      </div>
+      <div class="flex items-center gap-1.5" title="Maximum 3 consecutive steps in one direction">
+        <span class="w-2 h-2 rounded-full bg-[#059669]"></span>
+        <span>After 3: <span class="font-mono text-[#2e283d] font-bold">Turn</span></span>
+      </div>
+    </div>
+
+    <!-- Replay Scrub Controller (Visible only during Replay mode) -->
+    <div id="replayBar" class="w-full mt-3 hidden bg-[#eee8f7] border border-[#d8cfe8] rounded-2xl p-2.5 flex items-center justify-between shadow-sm">
+      <div class="text-xs font-mono text-[#2e283d] font-bold">
+        Step <span id="replayStepLabel" class="text-[#6366f1] font-extrabold">1</span> / <span id="replayTotalLabel">25</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button id="replayPrevBtn" class="px-3 py-1 rounded-lg bg-[#ded7eb] hover:bg-[#d0c6e0] text-xs font-mono font-bold text-[#4b3f61] transition">Prev</button>
+        <button id="replayPlayBtn" class="px-3.5 py-1 rounded-lg bg-[#6366f1] hover:bg-[#4f46e5] text-white text-xs font-bold font-mono transition shadow-sm">Auto</button>
+        <button id="replayNextBtn" class="px-3 py-1 rounded-lg bg-[#ded7eb] hover:bg-[#d0c6e0] text-xs font-mono font-bold text-[#4b3f61] transition">Next</button>
+        <button id="replayCloseBtn" class="w-7 h-7 rounded-lg bg-[#ded7eb] hover:bg-[#d0c6e0] flex items-center justify-center text-[#4b3f61] font-bold ml-1 transition" title="Exit Replay">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Clean Footer info -->
+  <footer class="w-full max-w-sm text-center text-[11px] text-[#736985] font-medium pt-3 pb-1 border-t border-[#e5dfd5]">
+    <span>WASD, Arrow Keys, or Tap Adjacent Boxes</span>
+  </footer>
+
+  <!-- ================= DIALOGS ================= -->
+
+  <!-- Result Dialog (End Game / Victory) -->
+  <div id="endModal" class="fixed inset-0 dialog-backdrop flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-[#faf7ff] border border-[#dcd4e8] max-w-xs w-full rounded-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-200 text-center">
+      <div id="modalIconWrap" class="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center bg-[#eee8f7] shadow-sm">
+        <svg id="modalIconDead" class="w-6 h-6 text-[#e11d48]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        <svg id="modalIconWin" class="w-6 h-6 text-[#059669] hidden" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+
+      <h2 id="modalTitle" class="text-xl font-extrabold text-[#2e283d] tracking-tight mb-1">Game Over</h2>
+      <p id="modalSubtitle" class="text-xs text-[#736985] mb-4 leading-relaxed font-medium">You stepped on an already used box.</p>
+
+      <div id="modalStatsGrid" class="bg-[#eee8f7] border border-[#dcd4e8] rounded-2xl p-3.5 mb-5 grid grid-cols-2 gap-2 text-left">
+        <div id="modalCoverageBox">
+          <div class="text-[10px] uppercase font-mono tracking-wider text-[#736985] font-bold">Coverage</div>
+          <div id="modalScore" class="text-2xl font-black font-mono text-[#6366f1] mt-0.5">18 / 25</div>
+        </div>
+        <div>
+          <div id="modalResultLabel" class="text-[10px] uppercase font-mono tracking-wider text-[#736985] font-bold">Boxes left</div>
+          <div id="modalResultText" class="text-2xl font-black font-mono text-[#2e283d] mt-0.5">72%</div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2.5">
+        <button id="modalPlayAgainBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:from-[#4f46e5] hover:to-[#7c3aed] text-white font-bold text-xs tracking-wide transition shadow-md shadow-indigo-500/25">
+          Play Again
+        </button>
+        <button id="modalReplayBtn" class="w-full py-2.5 rounded-xl bg-[#ede8f5] hover:bg-[#e4dcfa] border border-[#d8cfe8] text-[#4b3f61] font-bold text-xs transition">
+          Review Path
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Rules & Help Modal -->
+  <div id="helpModal" class="fixed inset-0 dialog-backdrop flex items-center justify-center p-3 sm:p-4 z-50 hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-[#faf7ff] border border-[#dcd4e8] max-w-sm w-full rounded-3xl p-5 shadow-2xl transform scale-95 transition-transform duration-200 max-h-[90vh] flex flex-col overflow-hidden">
+      
+      <!-- Modal Top Bar -->
+      <div class="flex items-center justify-between pb-2.5 border-b border-[#e5dfd5] mb-3 shrink-0">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#6366f1] to-[#4f46e5] flex items-center justify-center text-white text-xs font-bold shadow-sm">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-extrabold text-[#2e283d] tracking-tight">How to Play</h3>
+            <p class="text-[10px] text-[#736985]">Rules and movement mechanics</p>
+          </div>
+        </div>
+        <button id="helpCloseBtn" class="w-7 h-7 rounded-lg hover:bg-[#eee8f7] flex items-center justify-center text-[#736985] hover:text-[#2e283d] font-bold transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Clean Rules List -->
+      <div class="overflow-y-auto pr-1 flex-1 space-y-2.5 text-xs text-[#4b3f61] leading-relaxed py-1">
+        <div class="bg-white/70 p-3 rounded-2xl border border-[#e5dfd5]">
+          <div class="font-extrabold text-[#2e283d] text-xs flex items-center gap-1.5 mb-1">
+            <span class="w-4 h-4 rounded-full bg-[#6366f1] text-white flex items-center justify-center text-[10px] font-bold">1</span>
+            <span>The Goal</span>
+          </div>
+          <p class="text-[#65587f] font-medium text-[11px]">Visit every tile on the board exactly once. You cannot re-enter an already visited tile.</p>
+        </div>
+
+        <div class="bg-white/70 p-3 rounded-2xl border border-[#e5dfd5]">
+          <div class="font-extrabold text-[#2e283d] text-xs flex items-center gap-1.5 mb-1">
+            <span class="w-4 h-4 rounded-full bg-[#0284c7] text-white flex items-center justify-center text-[10px] font-bold">2</span>
+            <span>How Numbers Work (Straight vs Turn)</span>
+          </div>
+          <p class="text-[#65587f] font-medium text-[11px] mb-1.5">The starting tile is <b class="font-mono">1</b>. Keep going the same way to reach <b class="font-mono text-[#0284c7]">2</b>, then <b class="font-mono text-[#059669]">3</b>. After 3, you must turn; the next tile becomes <b class="font-mono text-[#e11d48]">1</b>.</p>
+          <div class="bg-[#f5f1fc] p-2.5 rounded-xl border border-[#e4daf2] text-[10.5px] text-[#4b3f61] space-y-1 mb-1.5">
+            <p><b>Straight:</b> Continuing in the exact same heading (e.g. <code>LEFT → LEFT</code>).</p>
+            <p><b>Turn:</b> Changing heading (e.g. <code>DOWN → LEFT</code>) resets count back to <b>1</b>.</p>
+          </div>
+          <p class="text-[10px] text-[#736985] font-semibold flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#e11d48]"></span>
+            <span>A straight run can contain at most 3 tiles, counting the starting tile. After 3, you must turn.</span>
+          </p>
+        </div>
+
+        <div class="bg-white/70 p-3 rounded-2xl border border-[#e5dfd5]">
+          <div class="font-extrabold text-[#2e283d] text-xs flex items-center gap-1.5 mb-1">
+            <span class="w-4 h-4 rounded-full bg-[#059669] text-white flex items-center justify-center text-[10px] font-bold">3</span>
+            <span>Numbers Fade Away</span>
+          </div>
+          <p class="text-[#65587f] font-medium text-[11px]">When your number touches an identical visible number on an adjacent tile, both numbers dissolve.</p>
+        </div>
+
+        <div class="bg-white/70 p-3 rounded-2xl border border-[#e5dfd5]">
+          <div class="font-extrabold text-[#e11d48] text-xs flex items-center gap-1.5 mb-1">
+            <span class="w-4 h-4 rounded-full bg-[#e11d48] text-white flex items-center justify-center text-[10px] font-bold">4</span>
+            <span>Memory Trap</span>
+          </div>
+          <p class="text-[#65587f] font-medium text-[11px]">Faded tiles appear empty, but they are <b class="text-[#e11d48]">permanently occupied</b>. Stepping on a faded tile ends the game. Tiles that still show a number simply won’t let you in.</p>
+        </div>
+      </div>
+
+      <!-- Bottom Action Buttons -->
+      <div class="flex gap-2 mt-3 shrink-0">
+        <button id="modalLaunchPracticeBtn" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:from-[#4f46e5] hover:to-[#7c3aed] text-white font-bold text-xs transition shadow-sm shadow-indigo-500/25 flex items-center justify-center gap-1.5">
+          <span>Start 4×4 Tutorial</span>
+        </button>
+        <button id="helpGotItBtn" class="py-2.5 px-4 rounded-xl bg-[#2e283d] hover:bg-[#1a1724] text-white font-bold text-xs transition shadow-sm">
+          Got It
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Game Logic Script -->
+  <script>
+    /* Warm Acoustic Synthesizer via Web Audio API */
+    const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+    const vibrate = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} };
+
+    class MinimalAcousticEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      // Crisp pleasant acoustic tile tap
+      playTap(num) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        const pitch = 340 + (num * 85);
+        osc.frequency.setValueAtTime(pitch, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.09);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.09);
+      }
+      // Soft ambient dissolve shimmer
+      playFade() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.frequency.setValueAtTime(560, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.28);
+        gain.gain.setValueAtTime(0.11, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.28);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.28);
+      }
+      // Subtle termination thud
+      playTermination() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.frequency.setValueAtTime(130, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(45, this.ctx.currentTime + 0.22);
+        gain.gain.setValueAtTime(0.14, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.22);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.22);
+      }
+      // Celebratory harmonic chord
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const chord = [440, 554.37, 659.25, 880]; // A4, C#5, E5, A5
+        chord.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          const t = this.ctx.currentTime + idx * 0.09;
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.1, t);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+          osc.start(t);
+          osc.stop(t + 0.45);
+        });
+      }
+    }
+
+    const sound = new MinimalAcousticEngine();
+
+    /* Fade 25 Core Controller */
+    class Fade25Engine {
+      constructor() {
+        this.gridSize = 5;
+        this.totalCells = 25;
+        this.mode = '5x5'; // '5x5' or '4x4'
+        this.isTutorMode = false;
+        this.tutorStepIndex = 0;
+
+        this.solvableParityStarts = [
+          [0,0], [0,2], [0,4],
+          [1,1], [1,3],
+          [2,0], [2,2], [2,4],
+          [3,1], [3,3],
+          [4,0], [4,2], [4,4]
+        ];
+
+        this.init4x4TutorSteps();
+        this.cacheDOM();
+        this.bindEvents();
+
+        // First-time players learn on the guided 4×4 board. Once completed,
+        // future visits open directly in the 5×5 Classic game.
+        if (this.hasCompletedTutorial()) {
+          this.buildBoard(5);
+          this.loadRecords();
+          this.startSession();
+        } else {
+          this.setMode('4x4');
+        }
+      }
+
+      hasCompletedTutorial() {
+        try {
+          return localStorage.getItem('fade25_tutorial_completed') === '1';
+        } catch (error) {
+          return false;
+        }
+      }
+
+      init4x4TutorSteps() {
+        this.tutor4x4Blueprint = [
+          { r: 0, c: 0, order: 1, dir: '→' },
+          { r: 0, c: 1, order: 2, dir: '→' },
+          { r: 0, c: 2, order: 3, dir: '↓' },
+          { r: 1, c: 2, order: 4, dir: '↓' },
+          { r: 2, c: 2, order: 5, dir: '←' },
+          { r: 2, c: 1, order: 6, dir: '↑' },
+          { r: 1, c: 1, order: 7, dir: '←' },
+          { r: 1, c: 0, order: 8, dir: '↓' },
+          { r: 2, c: 0, order: 9, dir: '↓' },
+          { r: 3, c: 0, order: 10, dir: '→' },
+          { r: 3, c: 1, order: 11, dir: '→' },
+          { r: 3, c: 2, order: 12, dir: '→' },
+          { r: 3, c: 3, order: 13, dir: '↑' },
+          { r: 2, c: 3, order: 14, dir: '↑' },
+          { r: 1, c: 3, order: 15, dir: '↑' },
+          { r: 0, c: 3, order: 16, dir: 'END' }
+        ];
+
+        this.showTutorBlueprint = false;
+
+        this.tutor4x4Moves = [
+          {
+            fromR: 0, fromC: 0,
+            targetR: 0, targetC: 1,
+            expectedDir: 'RIGHT',
+            instruction: 'Step <b>RIGHT</b> <span class="font-normal text-xs text-[#52637a]">(or tap target tile)</span>',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#4f46e5] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 mr-1.5">Rule 1</span> Straight steps count up: 1 → <b>2</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Walk along the edge first. Do not enter the center yet.'
+          },
+          {
+            fromR: 0, fromC: 1,
+            targetR: 0, targetC: 2,
+            expectedDir: 'RIGHT',
+            instruction: 'Step <b>RIGHT</b> again',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#4f46e5] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 mr-1.5">Rule 1</span> Continuing straight builds count up to <b>3</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Continuing along the border keeps inner tiles open for later.'
+          },
+          {
+            fromR: 0, fromC: 2,
+            targetR: 1, targetC: 2,
+            expectedDir: 'DOWN',
+            instruction: 'Turn <b>DOWN</b> <span class="font-normal text-xs text-[#52637a]">(Must turn)</span>',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#e11d48] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 mr-1.5">Rule 2</span> Max 3 straight steps reached. Turning from RIGHT to DOWN resets your number to <b>1</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Do not enter the top-right corner yet. That corner is reserved for the final exit.'
+          },
+          {
+            fromR: 1, fromC: 2,
+            targetR: 2, targetC: 2,
+            expectedDir: 'DOWN',
+            instruction: 'Step <b>DOWN</b> again',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#4f46e5] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 mr-1.5">Rule 1</span> Moving straight down builds count: 1 → <b>2</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Move down to position for an inward loop around center tiles.'
+          },
+          {
+            fromR: 2, fromC: 2,
+            targetR: 2, targetC: 1,
+            expectedDir: 'LEFT',
+            instruction: 'Turn <b>LEFT</b> toward center',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#e11d48] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 mr-1.5">Rule 2</span> Direction change resets number back to <b>1</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Turn into the middle now so center tiles do not get trapped later.'
+          },
+          {
+            fromR: 2, fromC: 1,
+            targetR: 1, targetC: 1,
+            expectedDir: 'UP',
+            instruction: 'Turn <b>UP</b> <span class="font-normal text-xs text-[#52637a]">(Watch fade)</span>',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#059669] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mr-1.5">Rule 3</span> Your next <b>1</b> lands beside other visible <b>1</b>s. Watch them all fade together.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Clear matching center numbers now before advancing to the bottom row.'
+          },
+          {
+            fromR: 1, fromC: 1,
+            targetR: 1, targetC: 0,
+            expectedDir: 'LEFT',
+            instruction: 'Turn <b>LEFT</b> to wall',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#e11d48] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 mr-1.5">Rule 4</span> Faded tiles look blank but remain occupied. Stepping on them ends the game.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Reconnect to the left wall. No empty tiles are left isolated.'
+          },
+          {
+            fromR: 1, fromC: 0,
+            targetR: 2, targetC: 0,
+            expectedDir: 'DOWN',
+            instruction: 'Turn <b>DOWN</b> along edge',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#e11d48] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 mr-1.5">Rule 2</span> Turning resets number back to <b>1</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Follow the perimeter downward to clear the outer border.'
+          },
+          {
+            fromR: 2, fromC: 0,
+            targetR: 3, targetC: 0,
+            expectedDir: 'DOWN',
+            instruction: 'Step <b>DOWN</b> to corner',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#4f46e5] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 mr-1.5">Rule 1</span> Straight step down builds count up to <b>2</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Clear corner tiles early because they have the fewest open neighbors.'
+          },
+          {
+            fromR: 3, fromC: 0,
+            targetR: 3, targetC: 1,
+            expectedDir: 'RIGHT',
+            instruction: 'Turn <b>RIGHT</b> along bottom row',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#e11d48] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 mr-1.5">Rule 2</span> Turning from DOWN to RIGHT resets count to <b>1</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Sweep the bottom edge cleanly toward the final corridor.'
+          },
+          {
+            fromR: 3, fromC: 1,
+            targetR: 3, targetC: 2,
+            expectedDir: 'RIGHT',
+            instruction: 'Step <b>RIGHT</b>',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#059669] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mr-1.5">Rule 3</span> Straight step becomes 2, touches matching 2 above, and fades.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Fading the 2 opens the board while keeping the right column unblocked.'
+          },
+          {
+            fromR: 3, fromC: 2,
+            targetR: 3, targetC: 3,
+            expectedDir: 'RIGHT',
+            instruction: 'Step <b>RIGHT</b> to bottom corner',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#4f46e5] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 mr-1.5">Rule 1</span> 3rd straight step reaches <b>3</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Arrived at the final column entrance. The runway to victory is now open.'
+          },
+          {
+            fromR: 3, fromC: 3,
+            targetR: 2, targetC: 3,
+            expectedDir: 'UP',
+            instruction: 'Turn <b>UP</b> <span class="font-normal text-xs text-[#52637a]">(Must turn)</span>',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#e11d48] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 mr-1.5">Rule 2</span> Max straight reached. Turn UP resets count to <b>1</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> The entire right column was preserved empty. Run straight up with no obstacles.'
+          },
+          {
+            fromR: 2, fromC: 3,
+            targetR: 1, targetC: 3,
+            expectedDir: 'UP',
+            instruction: 'Step <b>UP</b>',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#4f46e5] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 mr-1.5">Rule 1</span> Straight up builds count to <b>2</b>.',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> 15 of 16 tiles complete. Only the finish tile remains.'
+          },
+          {
+            fromR: 1, fromC: 3,
+            targetR: 0, targetC: 3,
+            expectedDir: 'UP',
+            instruction: 'Move <b>UP</b> <span class="font-normal text-xs text-[#52637a]">(Final Step)</span>',
+            lesson: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#059669] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mr-1.5">Cleared</span> Final step reaches 3 and completes the board (16/16).',
+            strategy: '<span class="font-mono text-[11px] font-extrabold uppercase tracking-wider text-[#b45309] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mr-1.5">Path Logic</span> Saving this corner for the final step allowed full board clearance without dead ends.'
+          }
+        ];
+      }
+
+      cacheDOM() {
+        this.boardEl = document.getElementById('gridBoard');
+        this.statusBarEl = document.getElementById('statusBar');
+        this.coverageStatWrap = document.getElementById('coverageStatWrap');
+        this.visitedCountEl = document.getElementById('visitedCount');
+        this.totalCountLabelEl = document.getElementById('totalCountLabel');
+        this.bestScoreEl = document.getElementById('bestScore');
+        this.dirLabelEl = document.getElementById('dirLabel');
+        this.meter1 = document.getElementById('meter1');
+        this.meter2 = document.getElementById('meter2');
+        this.meter3 = document.getElementById('meter3');
+        this.toastEl = document.getElementById('toast');
+        this.modalResultLabel = document.getElementById('modalResultLabel');
+
+        // Modal
+        this.endModal = document.getElementById('endModal');
+        this.modalTitle = document.getElementById('modalTitle');
+        this.modalSubtitle = document.getElementById('modalSubtitle');
+        this.modalScore = document.getElementById('modalScore');
+        this.modalResultText = document.getElementById('modalResultText');
+        this.modalIconDead = document.getElementById('modalIconDead');
+        this.modalIconWin = document.getElementById('modalIconWin');
+        this.modalStatsGrid = document.getElementById('modalStatsGrid');
+        this.modalCoverageBox = document.getElementById('modalCoverageBox');
+        this.modalPlayAgainBtn = document.getElementById('modalPlayAgainBtn');
+        this.helpModal = document.getElementById('helpModal');
+
+        // Tutor Elements
+        this.practiceBtn = document.getElementById('practiceBtn');
+        this.practiceBtnLabel = document.getElementById('practiceBtnLabel');
+        this.tutorLiveBanner = document.getElementById('tutorLiveBanner');
+        this.tutorLiveStep = document.getElementById('tutorLiveStep');
+        this.tutorLiveInstruction = document.getElementById('tutorLiveInstruction');
+        this.tutorLiveReason = document.getElementById('tutorLiveReason');
+        this.tutorLiveStrategy = document.getElementById('tutorLiveStrategy');
+        this.tutorBlueprintBtn = document.getElementById('tutorBlueprintBtn');
+        this.tutorBlueprintLabel = document.getElementById('tutorBlueprintLabel');
+
+        // Replay Bar
+        this.replayBar = document.getElementById('replayBar');
+        this.replayStepLabel = document.getElementById('replayStepLabel');
+        this.replayTotalLabel = document.getElementById('replayTotalLabel');
+        this.replayPrevBtn = document.getElementById('replayPrevBtn');
+        this.replayPlayBtn = document.getElementById('replayPlayBtn');
+        this.replayNextBtn = document.getElementById('replayNextBtn');
+        this.replayCloseBtn = document.getElementById('replayCloseBtn');
+
+        // Audio icons
+        this.soundIconOn = document.getElementById('soundIconOn');
+        this.soundIconOff = document.getElementById('soundIconOff');
+      }
+
+      buildBoard(size) {
+        this.gridSize = size;
+        this.totalCells = size * size;
+        this.totalCountLabelEl.textContent = this.totalCells;
+        this.boardEl.innerHTML = '';
+        this.boardEl.className = (size === 4)
+          ? 'grid grid-cols-4 grid-rows-4 gap-2.5 w-full h-full transition-all'
+          : 'grid grid-cols-5 grid-rows-5 gap-2 w-full h-full transition-all';
+
+        this.tiles = [];
+        for (let r = 0; r < size; r++) {
+          this.tiles[r] = [];
+          for (let c = 0; c < size; c++) {
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            tile.dataset.r = r;
+            tile.dataset.c = c;
+            tile.addEventListener('click', () => this.handleDirectTileTap(r, c));
+            this.boardEl.appendChild(tile);
+            this.tiles[r][c] = tile;
+          }
+        }
+      }
+
+      bindEvents() {
+        document.getElementById('restartBtn').addEventListener('click', () => {
+          if (this.isTutorMode) {
+            this.startTutorPractice();
+          } else {
+            this.startSession();
+          }
+        });
+        document.getElementById('soundBtn').addEventListener('click', () => this.toggleAudio());
+
+        // Header 4x4 Tutor Button
+        this.practiceBtn.addEventListener('click', () => {
+          if (this.isTutorMode) lsSet('fade25_tutorial_completed', '1');
+          this.setMode(this.isTutorMode ? '5x5' : '4x4');
+        });
+
+        // 4x4 Full Path Route Blueprint Toggle
+        if (this.tutorBlueprintBtn) {
+          this.tutorBlueprintBtn.addEventListener('click', () => {
+            this.showTutorBlueprint = !this.showTutorBlueprint;
+            if (this.tutorBlueprintLabel) {
+              this.tutorBlueprintLabel.textContent = this.showTutorBlueprint ? 'Hide Path' : 'Show Full Path';
+            }
+            this.tutorBlueprintBtn.classList.toggle('bg-indigo-600', this.showTutorBlueprint);
+            this.tutorBlueprintBtn.classList.toggle('text-white', this.showTutorBlueprint);
+            this.tutorBlueprintBtn.classList.toggle('bg-indigo-50', !this.showTutorBlueprint);
+            this.tutorBlueprintBtn.classList.toggle('text-[#4338ca]', !this.showTutorBlueprint);
+            this.render();
+          });
+        }
+
+        // Modal Play 4x4 Guided Game Button
+        document.getElementById('modalLaunchPracticeBtn').addEventListener('click', () => {
+          this.closeModal(this.helpModal);
+          this.setMode('4x4');
+        });
+
+        // Help modal controls
+        document.getElementById('helpBtn').addEventListener('click', () => {
+          this.openModal(this.helpModal);
+        });
+        document.getElementById('helpCloseBtn').addEventListener('click', () => this.closeModal(this.helpModal));
+        document.getElementById('helpGotItBtn').addEventListener('click', () => {
+          this.closeModal(this.helpModal);
+        });
+
+        // Result dialog actions
+        this.modalPlayAgainBtn.addEventListener('click', () => {
+          this.closeModal(this.endModal);
+          if (this.isTutorMode && this.isVictory) {
+            this.setMode('5x5');
+          } else if (this.isTutorMode) {
+            this.startTutorPractice();
+          } else {
+            this.startSession();
+          }
+        });
+        document.getElementById('modalReplayBtn').addEventListener('click', () => {
+          this.closeModal(this.endModal);
+          this.launchReplay();
+        });
+
+        // Replay bar buttons
+        this.replayPrevBtn.addEventListener('click', () => this.stepReplay(-1));
+        this.replayNextBtn.addEventListener('click', () => this.stepReplay(1));
+        this.replayPlayBtn.addEventListener('click', () => this.toggleAutoPlayback());
+        this.replayCloseBtn.addEventListener('click', () => this.terminateReplay());
+
+        // Physical Keyboard Controls
+        window.addEventListener('keydown', (e) => {
+          if (this.isReplaying || !this.helpModal.classList.contains('hidden')) return;
+          const key = e.code;
+          if (['ArrowUp', 'KeyW'].includes(key)) { e.preventDefault(); this.dispatchMove('UP'); }
+          else if (['ArrowDown', 'KeyS'].includes(key)) { e.preventDefault(); this.dispatchMove('DOWN'); }
+          else if (['ArrowLeft', 'KeyA'].includes(key)) { e.preventDefault(); this.dispatchMove('LEFT'); }
+          else if (['ArrowRight', 'KeyD'].includes(key)) { e.preventDefault(); this.dispatchMove('RIGHT'); }
+          else if (key === 'KeyR') {
+            if (this.isTutorMode) this.startTutorPractice();
+            else this.startSession();
+          }
+        });
+
+        // Touch gestures
+        let startX = 0, startY = 0;
+        this.boardEl.addEventListener('touchstart', (e) => {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        this.boardEl.addEventListener('touchend', (e) => {
+          if (this.isReplaying) return;
+          const dx = e.changedTouches[0].clientX - startX;
+          const dy = e.changedTouches[0].clientY - startY;
+          if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+          if (Math.abs(dx) > Math.abs(dy)) {
+            this.dispatchMove(dx > 0 ? 'RIGHT' : 'LEFT');
+          } else {
+            this.dispatchMove(dy > 0 ? 'DOWN' : 'UP');
+          }
+        }, { passive: true });
+      }
+
+      setMode(newMode) {
+        this.mode = newMode;
+        this.isTutorMode = (newMode === '4x4');
+
+        if (this.isTutorMode) {
+          this.practiceBtn.classList.add('bg-indigo-100', 'border-indigo-400', 'text-indigo-800');
+          this.practiceBtnLabel.textContent = 'Skip to 5×5';
+          this.tutorLiveBanner.classList.remove('hidden');
+          if (this.statusBarEl) this.statusBarEl.classList.add('hidden');
+          this.buildBoard(4);
+          this.loadRecords();
+          this.startTutorPractice();
+          this.notify('4×4 guided tutorial started');
+        } else {
+          this.practiceBtn.classList.remove('bg-indigo-100', 'border-indigo-400', 'text-indigo-800');
+          this.practiceBtnLabel.textContent = '4×4 Tutorial';
+          this.tutorLiveBanner.classList.add('hidden');
+          if (this.statusBarEl) {
+            this.statusBarEl.classList.remove('hidden');
+            this.statusBarEl.className = 'w-full grid grid-cols-3 items-center py-2.5 px-3.5 rounded-2xl bg-[#eee8f7] border border-[#d8cfe8] shadow-sm mb-3';
+          }
+          if (this.coverageStatWrap) this.coverageStatWrap.classList.remove('hidden');
+          this.buildBoard(5);
+          this.loadRecords();
+          this.startSession();
+          this.notify('5×5 Standard game started');
+        }
+      }
+
+      recordKey() {
+        return this.isTutorMode ? 'fade25_best_4x4' : 'fade25_best_5x5';
+      }
+
+      loadRecords() {
+        const key = this.recordKey();
+        this.bestScore = parseInt(lsGet(key) || '1', 10);
+        this.bestScoreEl.textContent = this.bestScore;
+      }
+
+      saveRecords() {
+        if (this.history.length > this.bestScore) {
+          this.bestScore = this.history.length;
+          const key = this.recordKey();
+          lsSet(key, this.bestScore);
+          this.bestScoreEl.textContent = this.bestScore;
+        }
+      }
+
+      toggleAudio() {
+        sound.enabled = !sound.enabled;
+        this.soundIconOn.classList.toggle('hidden', !sound.enabled);
+        this.soundIconOff.classList.toggle('hidden', sound.enabled);
+        this.notify(sound.enabled ? 'Audio On' : 'Audio Muted');
+      }
+
+      startSession() {
+        clearTimeout(this.endTimer);
+        this.isGameOver = false;
+        this.isVictory = false;
+        this.isReplaying = false;
+        this.replayTimer = null;
+        this.replayIndex = 0;
+        this.replayBar.classList.add('hidden');
+        this.closeModal(this.endModal);
+
+        // State grid 5x5
+        this.cells = Array(5).fill(0).map((_, r) =>
+          Array(5).fill(0).map((_, c) => ({
+            r, c,
+            isVisited: false,
+            isVisible: false,
+            value: null
+          }))
+        );
+
+        // Parity-verified start selection
+        const startCoord = this.solvableParityStarts[Math.floor(Math.random() * this.solvableParityStarts.length)];
+
+        const [sr, sc] = startCoord;
+        this.currR = sr;
+        this.currC = sc;
+        this.lastDir = null;
+        this.cadence = 1;
+
+        const rootCell = this.cells[sr][sc];
+        rootCell.isVisited = true;
+        rootCell.isVisible = true;
+        rootCell.value = 1;
+
+        this.history = [{
+          r: sr,
+          c: sc,
+          dir: null,
+          value: 1
+        }];
+
+        sound.playTap(1);
+        this.render();
+      }
+
+      startTutorPractice() {
+        clearTimeout(this.endTimer);
+        this.isGameOver = false;
+        this.isVictory = false;
+        this.isReplaying = false;
+        this.replayTimer = null;
+        this.replayIndex = 0;
+        this.replayBar.classList.add('hidden');
+        this.closeModal(this.endModal);
+
+        this.tutorStepIndex = 0;
+        this.cells = Array(4).fill(0).map((_, r) =>
+          Array(4).fill(0).map((_, c) => ({
+            r, c,
+            isVisited: false,
+            isVisible: false,
+            value: null
+          }))
+        );
+
+        this.currR = 0;
+        this.currC = 0;
+        this.lastDir = null;
+        this.cadence = 1;
+
+        const rootCell = this.cells[0][0];
+        rootCell.isVisited = true;
+        rootCell.isVisible = true;
+        rootCell.value = 1;
+
+        this.history = [{
+          r: 0,
+          c: 0,
+          dir: null,
+          value: 1
+        }];
+
+        sound.playTap(1);
+        this.updateTutorLivePrompt();
+        this.render();
+      }
+
+      updateTutorLivePrompt() {
+        if (!this.isTutorMode) return;
+        const step = this.tutor4x4Moves[this.tutorStepIndex];
+        if (!step) return;
+        this.tutorLiveStep.textContent = `Step ${this.tutorStepIndex + 1} of ${this.tutor4x4Moves.length}`;
+        this.tutorLiveInstruction.innerHTML = step.instruction;
+        this.tutorLiveReason.innerHTML = step.lesson;
+        if (this.tutorLiveStrategy) {
+          this.tutorLiveStrategy.innerHTML = step.strategy || '';
+        }
+      }
+
+      handleDirectTileTap(r, c) {
+        if (this.isGameOver || this.isVictory || this.isReplaying) return;
+
+        if (this.isTutorMode) {
+          const step = this.tutor4x4Moves[this.tutorStepIndex];
+          if (step && r === step.targetR && c === step.targetC) {
+            this.dispatchMove(step.expectedDir);
+            return;
+          }
+        }
+
+        const dr = r - this.currR;
+        const dc = c - this.currC;
+        if (Math.abs(dr) + Math.abs(dc) !== 1) return;
+
+        let d = null;
+        if (dr === -1) d = 'UP';
+        else if (dr === 1) d = 'DOWN';
+        else if (dc === -1) d = 'LEFT';
+        else if (dc === 1) d = 'RIGHT';
+
+        if (d) this.dispatchMove(d);
+      }
+
+      dispatchMove(direction) {
+        if (this.isGameOver || this.isVictory || this.isReplaying) return;
+
+        // In Tutor Mode: Protect user from wrong moves, gently guide them
+        if (this.isTutorMode) {
+          const step = this.tutor4x4Moves[this.tutorStepIndex];
+          if (step && direction !== step.expectedDir) {
+            sound.playTermination();
+            this.boardEl.classList.add('animate-shake');
+            setTimeout(() => this.boardEl.classList.remove('animate-shake'), 320);
+            this.notify(`Invalid move. Move ${step.expectedDir}`);
+            return;
+          }
+        }
+
+        const vectors = {
+          'UP': { dr: -1, dc: 0, label: 'N' },
+          'DOWN': { dr: 1, dc: 0, label: 'S' },
+          'LEFT': { dr: 0, dc: -1, label: 'W' },
+          'RIGHT': { dr: 0, dc: 1, label: 'E' }
+        };
+
+        const v = vectors[direction];
+        const nr = this.currR + v.dr;
+        const nc = this.currC + v.dc;
+
+        // Boundary constraint
+        if (nr < 0 || nr >= this.gridSize || nc < 0 || nc >= this.gridSize) {
+          this.notify('Can’t move there: edge of board!');
+          return;
+        }
+
+        // 3-Straight Cadence constraint
+        if (direction === this.lastDir && this.cadence >= 3) {
+          this.notify('Must turn! Max 3 steps straight.');
+          return;
+        }
+
+        // Occupied / Faded tile violation
+        const target = this.cells[nr][nc];
+        if (target.isVisited) {
+          if (target.isVisible) {
+            // Box still shows its number: you can see it is used, so it just blocks the move.
+            this.boardEl.classList.add('animate-shake');
+            setTimeout(() => this.boardEl.classList.remove('animate-shake'), 320);
+            vibrate(8);
+            this.notify('Already visited');
+            return;
+          }
+          // Faded box: this is the memory trap.
+          this.endSession('That box had faded, but it was still used.', false);
+          return;
+        }
+
+        // Value Generation & Cadence:
+        // Going straight builds momentum: 1 -> 2 -> 3
+        // Turning resets momentum: 1
+        let nextVal = 1;
+        if (this.lastDir === null) {
+          this.lastDir = direction;
+          this.cadence = 2;
+          nextVal = 2;
+        } else if (direction === this.lastDir) {
+          this.cadence++;
+          nextVal = Math.min(3, this.cadence);
+        } else {
+          this.cadence = 1;
+          this.lastDir = direction;
+          nextVal = 1;
+        }
+
+        // Advance position
+        this.currR = nr;
+        this.currC = nc;
+        target.isVisited = true;
+        target.isVisible = true;
+        target.value = nextVal;
+
+        sound.playTap(nextVal);
+
+        this.history.push({
+          r: nr,
+          c: nc,
+          dir: direction,
+          value: nextVal
+        });
+
+        // Resolve fade
+        this.evaluateFade(nr, nc, nextVal);
+
+        // State validation
+        if (this.isTutorMode) {
+          this.tutorStepIndex++;
+          if (this.history.length === this.totalCells) {
+            this.endSession('Outstanding! You followed the Tutor and cleared all 16 boxes!', true);
+          } else {
+            this.updateTutorLivePrompt();
+          }
+        } else {
+          if (this.history.length === this.totalCells) {
+            this.endSession('Amazing! You cleared all 25 boxes!', true);
+          } else if (!this.hasLegalMoves()) {
+            const left = this.totalCells - this.history.length;
+            this.endSession('Trapped with ' + left + (left === 1 ? ' box' : ' boxes') + ' left.', false);
+          }
+        }
+
+        this.render();
+      }
+
+      evaluateFade(r, c, val) {
+        const current = this.cells[r][c];
+        const orth = [
+          { dr: -1, dc: 0 },
+          { dr: 1, dc: 0 },
+          { dr: 0, dc: -1 },
+          { dr: 0, dc: 1 }
+        ];
+
+        const matches = [];
+        orth.forEach(({ dr, dc }) => {
+          const nr = r + dr;
+          const nc = c + dc;
+          if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+            const nb = this.cells[nr][nc];
+            if (nb.isVisible && nb.value === val) {
+              matches.push(nb);
+            }
+          }
+        });
+
+        if (matches.length > 0) {
+          sound.playFade();
+          const keys = new Set([r + ',' + c, ...matches.map(m => m.r + ',' + m.c)]);
+          this.dissolveKeys = keys;
+          if (this.isTutorMode) {
+            this.flashKeys = keys;
+            clearTimeout(this.flashTimer);
+            this.flashTimer = setTimeout(() => { this.flashKeys = null; if (!this.isReplaying) this.render(); }, 2600);
+          }
+          vibrate(12);
+          this.notify(val + ' + ' + val + ' faded', this.isTutorMode ? 3000 : 1500);
+
+          current.isVisible = false;
+          const currEl = this.tiles[r][c];
+          currEl.classList.add('fade-dissolve');
+          setTimeout(() => currEl.classList.remove('fade-dissolve'), 400);
+
+          matches.forEach(m => {
+            m.isVisible = false;
+            const el = this.tiles[m.r][m.c];
+            el.classList.add('fade-dissolve');
+            setTimeout(() => el.classList.remove('fade-dissolve'), 400);
+          });
+        }
+      }
+
+      hasLegalMoves() {
+        const dirs = [
+          { d: 'UP', dr: -1, dc: 0 },
+          { d: 'DOWN', dr: 1, dc: 0 },
+          { d: 'LEFT', dr: 0, dc: -1 },
+          { d: 'RIGHT', dr: 0, dc: 1 }
+        ];
+
+        for (const { d, dr, dc } of dirs) {
+          const nr = this.currR + dr;
+          const nc = this.currC + dc;
+          if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+            if (!this.cells[nr][nc].isVisited) {
+              if (d === this.lastDir && this.cadence >= 3) continue;
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      endSession(reason, isWin) {
+        this.isGameOver = !isWin;
+        this.isVictory = isWin;
+
+        if (isWin) {
+          sound.playVictory();
+          if (this.isTutorMode) {
+            try {
+              localStorage.setItem('fade25_tutorial_completed', '1');
+            } catch (error) {
+              // The tutorial still completes if browser storage is unavailable.
+            }
+          }
+        } else {
+          sound.playTermination();
+        }
+
+        const newBest = !this.isTutorMode && !isWin && this.history.length > this.bestScore;
+        this.saveRecords();
+        vibrate(isWin ? [30, 50, 30, 50, 90] : [40, 60, 40]);
+
+        clearTimeout(this.endTimer);
+        this.endTimer = setTimeout(() => {
+          if (!this.isGameOver && !this.isVictory) return;
+          this.modalIconDead.classList.toggle('hidden', isWin);
+          this.modalIconWin.classList.toggle('hidden', !isWin);
+          if (this.isTutorMode) {
+            if (this.modalCoverageBox) this.modalCoverageBox.classList.add('hidden');
+            if (this.modalStatsGrid) {
+              this.modalStatsGrid.classList.remove('grid-cols-2');
+              this.modalStatsGrid.classList.add('grid-cols-1');
+            }
+          } else {
+            if (this.modalCoverageBox) this.modalCoverageBox.classList.remove('hidden');
+            if (this.modalStatsGrid) {
+              this.modalStatsGrid.classList.remove('grid-cols-1');
+              this.modalStatsGrid.classList.add('grid-cols-2');
+            }
+          }
+
+          if (this.isTutorMode && isWin) {
+            this.modalTitle.textContent = '16/16 Cleared — Complete!';
+            this.modalSubtitle.textContent = 'You completed all tutorial steps and cleared the board. Ready for the 5×5 game?';
+            this.modalPlayAgainBtn.textContent = 'Start 5×5 Board';
+            this.modalResultText.textContent = '100% Cleared';
+            this.modalResultLabel.textContent = 'Result';
+          } else {
+            this.modalTitle.textContent = isWin ? 'Victory!' : 'Game Over';
+            this.modalSubtitle.textContent = reason + (newBest ? ' New personal best!' : '');
+            this.modalResultLabel.textContent = 'Boxes left';
+            this.modalPlayAgainBtn.textContent = this.isTutorMode ? 'Replay 4×4 Practice' : 'Play Again';
+            this.modalScore.textContent = `${this.history.length} / ${this.totalCells}`;
+            this.modalResultText.textContent = String(this.totalCells - this.history.length);
+          }
+          this.openModal(this.endModal);
+        }, 320);
+      }
+
+      render() {
+        const count = this.history.length;
+        this.visitedCountEl.textContent = count;
+
+        // Vector cadence
+        const dirsShort = { 'UP': 'N', 'DOWN': 'S', 'LEFT': 'W', 'RIGHT': 'E' };
+        this.dirLabelEl.textContent = this.lastDir ? dirsShort[this.lastDir] : '—';
+
+        this.meter1.className = 'dash-meter' + (this.cadence >= 1 ? ' fill' : '');
+        this.meter2.className = 'dash-meter' + (this.cadence >= 2 ? ' fill' : '');
+        this.meter3.className = 'dash-meter' + (this.cadence >= 3 ? ' lock' : '');
+
+        for (let r = 0; r < this.gridSize; r++) {
+          for (let c = 0; c < this.gridSize; c++) {
+            const cell = this.cells[r][c];
+            const tile = this.tiles[r][c];
+            const isCurrent = (r === this.currR && c === this.currC);
+
+            tile.className = 'tile';
+            const key = r + ',' + c;
+            if (this.dissolveKeys && this.dissolveKeys.has(key)) tile.classList.add('fade-dissolve');
+            if (this.flashKeys && this.flashKeys.has(key)) tile.classList.add('fade-flash');
+
+            if (isCurrent) {
+              tile.classList.add('current');
+              // The gold marker shows the player's position; a faded number stays hidden.
+              tile.textContent = cell.isVisible ? cell.value : '';
+            } else if (cell.isVisited) {
+              if (cell.isVisible) {
+                tile.classList.add('visited-visible', `val-${cell.value}`);
+                tile.textContent = cell.value;
+              } else {
+                tile.classList.add('faded');
+                tile.textContent = '';
+              }
+            } else {
+              tile.textContent = '';
+              if (this.isTutorMode && this.showTutorBlueprint && this.tutor4x4Blueprint) {
+                const bp = this.tutor4x4Blueprint.find(b => b.r === r && b.c === c);
+                if (bp) {
+                  tile.innerHTML = `<div class="flex flex-col items-center justify-center pointer-events-none select-none leading-none"><span class="text-[11px] font-mono font-extrabold text-[#4f46e5] bg-white/70 px-1 py-0.5 rounded shadow-2xs">#${bp.order}</span><span class="text-xs font-black text-[#6366f1] mt-0.5">${bp.dir}</span></div>`;
+                }
+              }
+            }
+          }
+        }
+
+        this.dissolveKeys = null;
+
+        // Live Tutor Highlight for target cell
+        if (this.isTutorMode && !this.isGameOver && !this.isVictory && this.tutorStepIndex < this.tutor4x4Moves.length) {
+          const step = this.tutor4x4Moves[this.tutorStepIndex];
+          if (step && this.tiles[step.targetR] && this.tiles[step.targetR][step.targetC]) {
+            const targetTile = this.tiles[step.targetR][step.targetC];
+            if (!this.cells[step.targetR][step.targetC].isVisited) {
+              targetTile.classList.add('target-hint');
+              if (this.showTutorBlueprint && this.tutor4x4Blueprint) {
+                const bp = this.tutor4x4Blueprint.find(b => b.r === step.targetR && b.c === step.targetC);
+                if (bp) {
+                  targetTile.innerHTML = `<div class="flex flex-col items-center justify-center pointer-events-none select-none leading-none"><span class="text-[11px] font-mono font-extrabold text-[#059669] bg-white/90 px-1 py-0.5 rounded shadow-2xs">#${bp.order}</span><span class="text-xs font-black text-[#059669] mt-0.5">${bp.dir}</span></div>`;
+                }
+              } else {
+                targetTile.textContent = '';
+              }
+            }
+          }
+        }
+      }
+
+      notify(msg, ms = 1500) {
+        this.toastEl.textContent = msg;
+        this.toastEl.classList.remove('opacity-0', '-translate-y-1.5');
+        this.toastEl.classList.add('opacity-100', 'translate-y-0');
+        clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => {
+          this.toastEl.classList.remove('opacity-100', 'translate-y-0');
+          this.toastEl.classList.add('opacity-0', '-translate-y-1.5');
+        }, ms);
+      }
+
+      openModal(modal) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+          modal.classList.remove('opacity-0');
+          modal.querySelector('div').classList.remove('scale-95');
+        }, 15);
+      }
+
+      closeModal(modal) {
+        modal.classList.add('opacity-0');
+        modal.querySelector('div').classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+      }
+
+      /* Replay Controller */
+      launchReplay() {
+        this.isReplaying = true;
+        this.replayIndex = 0;
+        this.replayBar.classList.remove('hidden');
+        this.replayTotalLabel.textContent = this.history.length;
+        this.renderReplay(0);
+      }
+
+      renderReplay(idx) {
+        this.replayIndex = Math.max(0, Math.min(idx, this.history.length - 1));
+        this.replayStepLabel.textContent = this.replayIndex + 1;
+
+        for (let r = 0; r < this.gridSize; r++) {
+          for (let c = 0; c < this.gridSize; c++) {
+            const tile = this.tiles[r][c];
+            tile.className = 'tile';
+            tile.textContent = '';
+          }
+        }
+
+        for (let i = 0; i <= this.replayIndex; i++) {
+          const step = this.history[i];
+          const tile = this.tiles[step.r][step.c];
+          tile.classList.add('replay-tile');
+          if (i === 0) tile.classList.add('start-node');
+          if (i === this.history.length - 1 && this.isGameOver && i === this.replayIndex) {
+            tile.classList.add('end-node');
+          }
+          tile.textContent = i + 1;
+        }
+
+        const active = this.history[this.replayIndex];
+        this.tiles[active.r][active.c].classList.add('current');
+      }
+
+      stepReplay(delta) {
+        this.haltAutoPlayback();
+        this.renderReplay(this.replayIndex + delta);
+      }
+
+      toggleAutoPlayback() {
+        if (this.replayTimer) {
+          this.haltAutoPlayback();
+        } else {
+          this.replayPlayBtn.textContent = 'Pause';
+          this.replayTimer = setInterval(() => {
+            if (this.replayIndex >= this.history.length - 1) {
+              this.haltAutoPlayback();
+            } else {
+              this.renderReplay(this.replayIndex + 1);
+            }
+          }, 380);
+        }
+      }
+
+      haltAutoPlayback() {
+        if (this.replayTimer) {
+          clearInterval(this.replayTimer);
+          this.replayTimer = null;
+        }
+        this.replayPlayBtn.textContent = 'Auto';
+      }
+
+      terminateReplay() {
+        this.haltAutoPlayback();
+        this.isReplaying = false;
+        this.replayBar.classList.add('hidden');
+        this.render();
+        this.openModal(this.endModal);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      window.game = new Fade25Engine();
+    });
+  </script>
+</body>
+</html>
