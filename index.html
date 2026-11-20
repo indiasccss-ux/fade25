@@ -1507,7 +1507,7 @@
           }
         } else {
           if (this.history.length === this.totalCells) {
-            this.endSession('Amazing! You cleared all 25 boxes!', true);
+            this.endSession(`Amazing! You cleared all ${this.totalCells} boxes!`, true);
           } else if (!this.hasLegalMoves()) {
             const left = this.totalCells - this.history.length;
             this.endSession('Trapped with ' + left + (left === 1 ? ' box' : ' boxes') + ' left.', false);
